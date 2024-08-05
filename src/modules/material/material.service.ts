@@ -1,38 +1,45 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Material } from './material.entity';
+import { CreateMaterialDto, UpdateMaterialDto } from './material.dto';
 
 @Injectable()
 export class MaterialService {
   constructor(
     @InjectRepository(Material)
-    private readonly materialRepository: Repository<Material>,
+    private materialRepository: Repository<Material>,
   ) {}
+
+  async create(createMaterialDto: CreateMaterialDto): Promise<Material> {
+    const material = this.materialRepository.create(createMaterialDto);
+    return this.materialRepository.save(material);
+  }
+
+  async update(id: number, updateMaterialDto: UpdateMaterialDto): Promise<Material> {
+    const material = await this.materialRepository.findOne({ where: { id } });
+    if (!material) {
+      throw new NotFoundException(`Material with ID ${id} not found`);
+    }
+
+    Object.assign(material, updateMaterialDto);
+    return this.materialRepository.save(material);
+  }
 
   async findAll(): Promise<Material[]> {
     return this.materialRepository.find({
-      relations: ['category', 'type', 'subtype'], // Загрузка связанных сущностей
+      relations: ['category', 'type', 'subtype'],
     });
-  }
-
-  async create(data: Partial<Material>): Promise<Material> {
-    const newMaterial = this.materialRepository.create(data);
-    return this.materialRepository.save(newMaterial);
   }
 
   async findOne(id: number): Promise<Material> {
-    return this.materialRepository.findOne({
+    const material = await this.materialRepository.findOne({
       where: { id },
-      relations: ['category', 'type', 'subtype'], // Загрузка связанных сущностей
+      relations: ['category', 'type', 'subtype'],
     });
-  }
-
-  async update(id: number, data: Partial<Material>): Promise<Material> {
-    await this.materialRepository.update(id, data);
-    return this.materialRepository.findOne({
-      where: { id },
-      relations: ['category', 'type', 'subtype'], // Загрузка связанных сущностей
-    });
+    if (!material) {
+      throw new NotFoundException(`Material with ID ${id} not found`);
+    }
+    return material;
   }
 }

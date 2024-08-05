@@ -1,19 +1,25 @@
-import { Controller, Get, Post, Body, Param, Put } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Put, Delete } from '@nestjs/common';
 import { RequestsService } from './requests.service';
 import { Requests } from './requests.entity';
+import { CreateRequestDto, UpdateRequestDto } from './request.dto';
 
 @Controller('requests')
 export class RequestsController {
   constructor(private readonly requestsService: RequestsService) {}
 
+  @Post()
+  async create(@Body() createRequestDto: CreateRequestDto): Promise<Requests> {
+    return this.requestsService.create(createRequestDto);
+  }
+
+  @Put(':id')
+  async update(@Param('id') id: number, @Body() updateRequestDto: UpdateRequestDto): Promise<Requests> {
+    return this.requestsService.update(id, updateRequestDto);
+  }
+
   @Get()
   async findAll(): Promise<Requests[]> {
     return this.requestsService.findAll();
-  }
-
-  @Post()
-  async create(@Body() data: Partial<Requests>): Promise<Requests> {
-    return this.requestsService.create(data);
   }
 
   @Get(':id')
@@ -21,8 +27,8 @@ export class RequestsController {
     return this.requestsService.findOne(id);
   }
 
-  @Put(':id')
-  async update(@Param('id') id: number, @Body() data: Partial<Requests>): Promise<Requests> {
-    return this.requestsService.update(id, data);
+  @Delete(':id')
+  async remove(@Param('id') id: number): Promise<void> {
+    return this.requestsService.remove(id);
   }
 }

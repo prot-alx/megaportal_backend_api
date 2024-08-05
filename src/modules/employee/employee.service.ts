@@ -1,7 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Employee } from './employee.entity';
+import { Employee, EmployeeRole } from './employee.entity';
+import { CreateEmployeeDto, UpdateEmployeeDto } from './employee.dto';
 
 @Injectable()
 export class EmployeeService {
@@ -14,18 +15,34 @@ export class EmployeeService {
     return this.employeeRepository.find();
   }
 
-  async create(data: Partial<Employee>): Promise<Employee> {
-    const newEmployee = this.employeeRepository.create(data);
-    return this.employeeRepository.save(newEmployee);
+  async create(createEmployeeDto: CreateEmployeeDto): Promise<Employee> {
+    const employee = new Employee();
+
+    employee.login = createEmployeeDto.login;
+    employee.password = createEmployeeDto.password;
+    employee.externalId = createEmployeeDto.externalId;
+    employee.name = createEmployeeDto.name;
+    employee.address = createEmployeeDto.address;
+    employee.phone = createEmployeeDto.phone;
+    employee.role = createEmployeeDto.role || EmployeeRole.Performer;
+    employee.isActive = createEmployeeDto.isActive !== undefined ? createEmployeeDto.isActive : true;
+
+    return this.employeeRepository.save(employee);
   }
 
   async findOne(id: number): Promise<Employee> {
     return this.employeeRepository.findOne({ where: { id } });
   }
+  
+  async update(id: number, updateEmployeeDto: UpdateEmployeeDto): Promise<Employee> {
+    const employee = await this.employeeRepository.findOne({ where: { id } });
+    if (!employee) {
+      throw new NotFoundException(`Employee with ID ${id} not found`);
+    }
 
-  async update(id: number, data: Partial<Employee>): Promise<Employee> {
-    await this.employeeRepository.update(id, data);
-    return this.employeeRepository.findOne({ where: { id } });
+    Object.assign(employee, updateEmployeeDto);
+
+    return this.employeeRepository.save(employee);
   }
 
   async remove(id: number): Promise<void> {

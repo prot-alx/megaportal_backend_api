@@ -1,30 +1,40 @@
-import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { MaterialCategory } from './material-category.entity';
+import { Injectable, NotFoundException } from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Repository } from "typeorm";
+import { CreateMaterialCategoryDto, UpdateMaterialCategoryDto } from "./material-category.dto";
+import { MaterialCategory } from "./material-category.entity";
 
 @Injectable()
 export class MaterialCategoryService {
   constructor(
     @InjectRepository(MaterialCategory)
-    private readonly materialCategoryRepository: Repository<MaterialCategory>,
+    private materialCategoryRepository: Repository<MaterialCategory>,
   ) {}
+
+  async create(createMaterialCategoryDto: CreateMaterialCategoryDto): Promise<MaterialCategory> {
+    const materialCategory = this.materialCategoryRepository.create(createMaterialCategoryDto);
+    return this.materialCategoryRepository.save(materialCategory);
+  }
+
+  async update(id: number, updateMaterialCategoryDto: UpdateMaterialCategoryDto): Promise<MaterialCategory> {
+    const materialCategory = await this.materialCategoryRepository.findOne({ where: { id } });
+    if (!materialCategory) {
+      throw new NotFoundException(`MaterialCategory with ID ${id} not found`);
+    }
+
+    Object.assign(materialCategory, updateMaterialCategoryDto);
+    return this.materialCategoryRepository.save(materialCategory);
+  }
 
   async findAll(): Promise<MaterialCategory[]> {
     return this.materialCategoryRepository.find();
   }
 
-  async create(data: Partial<MaterialCategory>): Promise<MaterialCategory> {
-    const newCategory = this.materialCategoryRepository.create(data);
-    return this.materialCategoryRepository.save(newCategory);
-  }
-
   async findOne(id: number): Promise<MaterialCategory> {
-    return this.materialCategoryRepository.findOne({ where: { id } });
-  }
-
-  async update(id: number, data: Partial<MaterialCategory>): Promise<MaterialCategory> {
-    await this.materialCategoryRepository.update(id, data);
-    return this.materialCategoryRepository.findOne({ where: { id } });
+    const materialCategory = await this.materialCategoryRepository.findOne({ where: { id } });
+    if (!materialCategory) {
+      throw new NotFoundException(`MaterialCategory with ID ${id} not found`);
+    }
+    return materialCategory;
   }
 }

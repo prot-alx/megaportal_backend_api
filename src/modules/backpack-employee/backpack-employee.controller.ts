@@ -1,23 +1,22 @@
-import { Controller, Get, Post, Put, Delete, Body, Param } from '@nestjs/common';
+import { Controller, Post, Put, Body, Param } from '@nestjs/common';
 import { BackpackEmployeeService } from './backpack-employee.service';
 import { BackpackEmployee } from './backpack-employee.entity';
+import { CreateBackpackEmployeeDto, UpdateBackpackEmployeeDto } from './backpack-employee.dto';
 
 @Controller('backpack-employee')
 export class BackpackEmployeeController {
   constructor(private readonly backpackEmployeeService: BackpackEmployeeService) {}
 
-  @Get()
-  async findAll(): Promise<BackpackEmployee[]> {
-    return this.backpackEmployeeService.findAll();
-  }
-
   @Post()
-  async create(@Body() data: Partial<BackpackEmployee>): Promise<BackpackEmployee> {
-    return this.backpackEmployeeService.create(data);
+  async create(@Body() createBackpackEmployeeDto: CreateBackpackEmployeeDto): Promise<BackpackEmployee> {
+    return this.backpackEmployeeService.create(createBackpackEmployeeDto);
   }
 
   @Put(':id')
-  async update(@Param('id') id: number, @Body() data: Partial<BackpackEmployee>): Promise<BackpackEmployee> {
-    return this.backpackEmployeeService.update(id, data);
+  async update(
+    @Param('id') id: number,
+    @Body() updateBackpackEmployeeDto: UpdateBackpackEmployeeDto,
+  ): Promise<BackpackEmployee> {
+    return this.backpackEmployeeService.update(id, updateBackpackEmployeeDto);
   }
 }

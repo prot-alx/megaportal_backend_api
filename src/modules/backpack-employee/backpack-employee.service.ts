@@ -1,29 +1,28 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { BackpackEmployee } from './backpack-employee.entity';
+import { CreateBackpackEmployeeDto, UpdateBackpackEmployeeDto } from './backpack-employee.dto';
 
 @Injectable()
 export class BackpackEmployeeService {
   constructor(
     @InjectRepository(BackpackEmployee)
-    private readonly backpackEmployeeRepository: Repository<BackpackEmployee>,
+    private backpackEmployeeRepository: Repository<BackpackEmployee>,
   ) {}
 
-  // Пример метода для получения всех записей
-  async findAll(): Promise<BackpackEmployee[]> {
-    return this.backpackEmployeeRepository.find();
+  async create(createBackpackEmployeeDto: CreateBackpackEmployeeDto): Promise<BackpackEmployee> {
+    const backpackEmployee = this.backpackEmployeeRepository.create(createBackpackEmployeeDto);
+    return this.backpackEmployeeRepository.save(backpackEmployee);
   }
 
-  // Пример метода для создания новой записи
-  async create(data: Partial<BackpackEmployee>): Promise<BackpackEmployee> {
-    const newBackpackEmployee = this.backpackEmployeeRepository.create(data);
-    return this.backpackEmployeeRepository.save(newBackpackEmployee);
-  }
+  async update(id: number, updateBackpackEmployeeDto: UpdateBackpackEmployeeDto): Promise<BackpackEmployee> {
+    const backpackEmployee = await this.backpackEmployeeRepository.findOne({ where: { id } });
+    if (!backpackEmployee) {
+      throw new NotFoundException(`BackpackEmployee with ID ${id} not found`);
+    }
 
-  // Пример метода для обновления записи
-  async update(id: number, data: Partial<BackpackEmployee>): Promise<BackpackEmployee> {
-    await this.backpackEmployeeRepository.update(id, data);
-    return this.backpackEmployeeRepository.findOne({ where: { id } });
+    Object.assign(backpackEmployee, updateBackpackEmployeeDto);
+    return this.backpackEmployeeRepository.save(backpackEmployee);
   }
 }

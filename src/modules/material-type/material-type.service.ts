@@ -1,30 +1,40 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { MaterialType } from './material-type.entity';
+import { CreateMaterialTypeDto, UpdateMaterialTypeDto } from './material-type.dto';
 
 @Injectable()
 export class MaterialTypeService {
   constructor(
     @InjectRepository(MaterialType)
-    private readonly materialTypeRepository: Repository<MaterialType>,
+    private materialTypeRepository: Repository<MaterialType>,
   ) {}
+
+  async create(createMaterialTypeDto: CreateMaterialTypeDto): Promise<MaterialType> {
+    const materialType = this.materialTypeRepository.create(createMaterialTypeDto);
+    return this.materialTypeRepository.save(materialType);
+  }
+
+  async update(id: number, updateMaterialTypeDto: UpdateMaterialTypeDto): Promise<MaterialType> {
+    const materialType = await this.materialTypeRepository.findOne({ where: { id } });
+    if (!materialType) {
+      throw new NotFoundException(`MaterialType with ID ${id} not found`);
+    }
+
+    materialType.name = updateMaterialTypeDto.name;
+    return this.materialTypeRepository.save(materialType);
+  }
 
   async findAll(): Promise<MaterialType[]> {
     return this.materialTypeRepository.find();
   }
 
-  async create(data: Partial<MaterialType>): Promise<MaterialType> {
-    const newMaterialType = this.materialTypeRepository.create(data);
-    return this.materialTypeRepository.save(newMaterialType);
-  }
-
   async findOne(id: number): Promise<MaterialType> {
-    return this.materialTypeRepository.findOne({ where: { id } });
-  }
-
-  async update(id: number, data: Partial<MaterialType>): Promise<MaterialType> {
-    await this.materialTypeRepository.update(id, data);
-    return this.materialTypeRepository.findOne({ where: { id } });
+    const materialType = await this.materialTypeRepository.findOne({ where: { id } });
+    if (!materialType) {
+      throw new NotFoundException(`MaterialType with ID ${id} not found`);
+    }
+    return materialType;
   }
 }
