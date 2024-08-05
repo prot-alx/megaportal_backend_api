@@ -4,6 +4,9 @@
 /build
 /db
 
+# Игнорировать папку db
+db/
+
 # Logs
 logs
 *.log
