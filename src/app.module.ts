@@ -4,6 +4,8 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { entities } from './modules/entities';
 import { modules } from './modules/modules';
 import configuration from './config/configuration';
+import { APP_FILTER } from '@nestjs/core';
+import { AllExceptionsFilter } from './error/all-exceptions.filter';
 
 @Module({
   imports: [
@@ -26,6 +28,12 @@ import configuration from './config/configuration';
       inject: [ConfigService],
     }),
     ...modules,
+  ],
+  providers: [
+    {
+      provide: APP_FILTER,
+      useClass: AllExceptionsFilter,
+    },
   ],
 })
 

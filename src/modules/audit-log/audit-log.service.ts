@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { AuditLog } from './audit-log.entity';
+import { CreateAuditLogDto } from './audit-log.dto';
 
 @Injectable()
 export class AuditLogService {
@@ -10,16 +11,34 @@ export class AuditLogService {
     private readonly auditLogRepository: Repository<AuditLog>,
   ) {}
 
-  async findAll(): Promise<AuditLog[]> {
-    return this.auditLogRepository.find();
+  // Получение логов за указанный период с возможной фильтрацией по действию
+  async getLogs(startDate: Date, endDate: Date, action?: string): Promise<AuditLog[]> {
+    const where: any = {
+      action_time: {
+        $gte: startDate,
+        $lte: endDate,
+      },
+    };
+
+    if (action) {
+      where.action = action;
+    }
+
+    return this.auditLogRepository.find({
+      where,
+      relations: ['employee'],
+    });
   }
 
-  async create(data: Partial<AuditLog>): Promise<AuditLog> {
-    const newAuditLog = this.auditLogRepository.create(data);
-    return this.auditLogRepository.save(newAuditLog);
-  }
-
-  async findOne(id: number): Promise<AuditLog> {
-    return this.auditLogRepository.findOne({ where: { id } });
+  // Логирование действий
+  async logAction(createAuditLogDto: CreateAuditLogDto): Promise<void> {
+    const auditLog = this.auditLogRepository.create({
+      employee: { id: createAuditLogDto.employee_id },
+      action: createAuditLogDto.action,
+      table_name: createAuditLogDto.table_name,
+      record_id: createAuditLogDto.record_id,
+      details: createAuditLogDto.details,
+    });
+    await this.auditLogRepository.save(auditLog);
   }
 }

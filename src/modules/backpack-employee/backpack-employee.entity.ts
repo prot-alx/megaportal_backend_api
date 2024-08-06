@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, CreateDateColumn, UpdateDateColumn } from 'typeorm';
 import { Employee } from '../employee/employee.entity';
 import { WarehouseFilling } from '../warehouse-filling/warehouse-filling.entity';
 
@@ -18,9 +18,9 @@ export class BackpackEmployee {
   @Column()
   count: number;
 
-  @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP', name: 'created_at' })
-  createdAt: Date;
+  @CreateDateColumn()
+  created_at: Date;
 
-  @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP', onUpdate: 'CURRENT_TIMESTAMP', name: 'updated_at' })
-  updatedAt: Date;
+  @UpdateDateColumn()
+  updated_at: Date;
 }

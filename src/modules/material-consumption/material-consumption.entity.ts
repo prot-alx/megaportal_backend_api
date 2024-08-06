@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, CreateDateColumn, UpdateDateColumn } from 'typeorm';
 import { BackpackEmployee } from '../backpack-employee/backpack-employee.entity';
 import { RequestData } from '../request-data/request-data.entity';
 
@@ -21,9 +21,9 @@ export class MaterialConsumption {
   @Column({ default: false })
   approved: boolean;
 
-  @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP', name: 'created_at' })
-  createdAt: Date;
+  @CreateDateColumn()
+  created_at: Date;
 
-  @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP', onUpdate: 'CURRENT_TIMESTAMP', name: 'updated_at' })
-  updatedAt: Date;
+  @UpdateDateColumn()
+  updated_at: Date;
 }

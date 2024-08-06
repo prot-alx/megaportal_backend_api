@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, CreateDateColumn, UpdateDateColumn } from 'typeorm';
 import { Requests } from '../request/requests.entity';
 import { Employee } from '../employee/employee.entity';
 
@@ -19,9 +19,9 @@ export class RequestData {
   @JoinColumn({ name: 'performer_id' })
   performer: Employee;
 
-  @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP', name: 'created_at' })
-  createdAt: Date;
+  @CreateDateColumn()
+  created_at: Date;
 
-  @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP', onUpdate: 'CURRENT_TIMESTAMP', name: 'updated_at' })
-  updatedAt: Date;
+  @UpdateDateColumn()
+  updated_at: Date;
 }

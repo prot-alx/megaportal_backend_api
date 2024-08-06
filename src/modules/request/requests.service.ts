@@ -81,12 +81,4 @@ export class RequestsService {
 
     return request;
   }
-
-  async remove(id: number): Promise<void> {
-    const result = await this.requestsRepository.delete(id);
-
-    if (result.affected === 0) {
-      throw new NotFoundException(`Request with ID ${id} not found`);
-    }
-  }
 }

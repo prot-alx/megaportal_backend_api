@@ -1,23 +1,27 @@
-import { Controller, Get, Post, Put, Delete, Body, Param } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Delete,
+  Body,
+  Param,
+  Query,
+} from '@nestjs/common';
 import { AuditLogService } from './audit-log.service';
 import { AuditLog } from './audit-log.entity';
+import { GetAuditLogsDto } from './audit-log.dto';
 
 @Controller('audit-log')
 export class AuditLogController {
   constructor(private readonly auditLogService: AuditLogService) {}
 
+  // Получение логов за указанный период с возможной фильтрацией по действию
   @Get()
-  async findAll(): Promise<AuditLog[]> {
-    return this.auditLogService.findAll();
-  }
-
-  @Post()
-  async create(@Body() data: Partial<AuditLog>): Promise<AuditLog> {
-    return this.auditLogService.create(data);
-  }
-
-  @Get(':id')
-  async findOne(@Param('id') id: number): Promise<AuditLog> {
-    return this.auditLogService.findOne(id);
+  async getLogs(
+    @Query() getAuditLogsDto: GetAuditLogsDto,
+  ): Promise<AuditLog[]> {
+    const { startDate, endDate, action } = getAuditLogsDto;
+    return this.auditLogService.getLogs(startDate, endDate, action);
   }
 }

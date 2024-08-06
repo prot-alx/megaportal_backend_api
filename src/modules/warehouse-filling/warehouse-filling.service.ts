@@ -78,13 +78,4 @@ export class WarehouseFillingService {
 
     return warehouseFilling;
   }
-
-  // Метод для удаления записи по ID
-  async remove(id: number): Promise<void> {
-    const result = await this.warehouseFillingRepository.delete(id);
-
-    if (result.affected === 0) {
-      throw new NotFoundException(`WarehouseFilling with ID ${id} not found`);
-    }
-  }
 }

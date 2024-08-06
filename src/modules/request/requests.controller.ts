@@ -26,9 +26,4 @@ export class RequestsController {
   async findOne(@Param('id') id: number): Promise<Requests> {
     return this.requestsService.findOne(id);
   }
-
-  @Delete(':id')
-  async remove(@Param('id') id: number): Promise<void> {
-    return this.requestsService.remove(id);
-  }
 }

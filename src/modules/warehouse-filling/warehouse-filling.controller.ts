@@ -30,10 +30,4 @@ export class WarehouseFillingController {
   async findOne(@Param('id') id: number): Promise<WarehouseFilling> {
     return this.warehouseFillingService.findOne(id);
   }
-
-  // Эндпоинт для удаления записи по ID
-  @Delete(':id')
-  async remove(@Param('id') id: number): Promise<void> {
-    return this.warehouseFillingService.remove(id);
-  }
 }
