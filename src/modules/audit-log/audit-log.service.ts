@@ -1,8 +1,9 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { AuditLog } from './audit-log.entity';
 import { CreateAuditLogDto } from './audit-log.dto';
+import { DetailedInternalServerErrorException } from 'src/error/all-exceptions.filter';
 
 @Injectable()
 export class AuditLogService {
@@ -11,34 +12,59 @@ export class AuditLogService {
     private readonly auditLogRepository: Repository<AuditLog>,
   ) {}
 
-  // Получение логов за указанный период с возможной фильтрацией по действию
-  async getLogs(startDate: Date, endDate: Date, action?: string): Promise<AuditLog[]> {
-    const where: any = {
-      action_time: {
-        $gte: startDate,
-        $lte: endDate,
-      },
-    };
+  async getLogs(
+    startDate?: Date,
+    endDate?: Date,
+    action?: string,
+  ): Promise<AuditLog[]> {
+    try {
+      const query = this.auditLogRepository.createQueryBuilder('auditLog');
 
-    if (action) {
-      where.action = action;
+      if (startDate) {
+        query.andWhere('auditLog.action_time >= :startDate', { startDate });
+      }
+
+      if (endDate) {
+        query.andWhere('auditLog.action_time <= :endDate', { endDate });
+      }
+
+      if (action) {
+        query.andWhere('auditLog.action = :action', { action });
+      }
+
+      const logs = await query.getMany();
+      if (!logs.length) {
+        throw new NotFoundException(
+          'No audit logs found for the given criteria.',
+        );
+      }
+
+      return logs;
+    } catch (error) {
+      console.error('Error getting logs:', error);
+      throw new DetailedInternalServerErrorException(
+        'Failed to get audit logs.',
+        error.message,
+      );
     }
-
-    return this.auditLogRepository.find({
-      where,
-      relations: ['employee'],
-    });
   }
 
-  // Логирование действий
   async logAction(createAuditLogDto: CreateAuditLogDto): Promise<void> {
-    const auditLog = this.auditLogRepository.create({
-      employee: { id: createAuditLogDto.employee_id },
-      action: createAuditLogDto.action,
-      table_name: createAuditLogDto.table_name,
-      record_id: createAuditLogDto.record_id,
-      details: createAuditLogDto.details,
-    });
-    await this.auditLogRepository.save(auditLog);
+    try {
+      const auditLog = this.auditLogRepository.create({
+        employee: { id: createAuditLogDto.employee_id },
+        action: createAuditLogDto.action,
+        table_name: createAuditLogDto.table_name,
+        record_id: createAuditLogDto.record_id,
+        details: createAuditLogDto.details,
+      });
+      await this.auditLogRepository.save(auditLog);
+    } catch (error) {
+      console.error('Error logging action:', error);
+      throw new DetailedInternalServerErrorException(
+        'Failed to log action.',
+        error.message,
+      );
+    }
   }
 }
