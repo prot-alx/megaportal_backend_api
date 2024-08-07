@@ -1,12 +1,14 @@
-import { Controller, Get, Query } from '@nestjs/common';
+import { Controller, Get, Query, UseGuards } from '@nestjs/common';
 import { AuditLogService } from './audit-log.service';
 import { AuditLog } from './audit-log.entity';
 import { GetAuditLogsDto } from './audit-log.dto';
 import { ApiTags, ApiOperation, ApiQuery, ApiResponse } from '@nestjs/swagger';
 import { DetailedInternalServerErrorException } from 'src/error/all-exceptions.filter';
+import { AuthGuard } from '@nestjs/passport';
 
 @ApiTags('Audit Logs')
 @Controller('audit-log')
+@UseGuards(AuthGuard('jwt'))
 export class AuditLogController {
   constructor(private readonly auditLogService: AuditLogService) {}
 

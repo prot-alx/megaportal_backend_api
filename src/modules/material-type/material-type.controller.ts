@@ -1,4 +1,12 @@
-import { Controller, Get, Post, Body, Param, Put } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  Put,
+  UseGuards,
+} from '@nestjs/common';
 import { MaterialTypeService } from './material-type.service';
 import { MaterialType } from './material-type.entity';
 import {
@@ -6,9 +14,11 @@ import {
   UpdateMaterialTypeDto,
 } from './material-type.dto';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { AuthGuard } from '@nestjs/passport';
 
 @ApiTags('material-type')
 @Controller('material-type')
+@UseGuards(AuthGuard('jwt'))
 export class MaterialTypeController {
   constructor(private readonly materialTypeService: MaterialTypeService) {}
 

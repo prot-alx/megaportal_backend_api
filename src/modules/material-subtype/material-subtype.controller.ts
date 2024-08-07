@@ -1,4 +1,12 @@
-import { Controller, Get, Post, Body, Param, Put } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  Put,
+  UseGuards,
+} from '@nestjs/common';
 import { MaterialSubtype } from './material-subtype.entity';
 import { MaterialSubtypeService } from './material-subtype.service';
 import {
@@ -6,9 +14,11 @@ import {
   UpdateMaterialSubtypeDto,
 } from './material-subtype.dto';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { AuthGuard } from '@nestjs/passport';
 
 @ApiTags('material-subtype')
 @Controller('material-subtype')
+@UseGuards(AuthGuard('jwt'))
 export class MaterialSubtypeController {
   constructor(
     private readonly materialSubtypeService: MaterialSubtypeService,

@@ -1,9 +1,11 @@
-import { Controller, Get, Post, Body, Param, Put } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Put, UseGuards } from '@nestjs/common';
 import { RequestsService } from './requests.service';
 import { Requests } from './requests.entity';
 import { CreateRequestDto, UpdateRequestDto } from './request.dto';
+import { AuthGuard } from '@nestjs/passport';
 
 @Controller('requests')
+@UseGuards(AuthGuard('jwt'))
 export class RequestsController {
   constructor(private readonly requestsService: RequestsService) {}
 

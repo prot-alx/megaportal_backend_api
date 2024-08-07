@@ -1,12 +1,22 @@
-import { Controller, Get, Post, Body, Param, Put } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  Put,
+  UseGuards,
+} from '@nestjs/common';
 import { WarehouseFillingService } from './warehouse-filling.service';
 import { WarehouseFilling } from './warehouse-filling.entity';
 import {
   CreateWarehouseFillingDto,
   UpdateWarehouseFillingDto,
 } from './warehouse-filling.dto';
+import { AuthGuard } from '@nestjs/passport';
 
 @Controller('warehouse-filling')
+@UseGuards(AuthGuard('jwt'))
 export class WarehouseFillingController {
   constructor(
     private readonly warehouseFillingService: WarehouseFillingService,

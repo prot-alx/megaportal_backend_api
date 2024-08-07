@@ -1,12 +1,22 @@
-import { Controller, Get, Post, Put, Param, Body } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Param,
+  Body,
+  UseGuards,
+} from '@nestjs/common';
 import { MaterialConsumptionService } from './material-consumption.service';
 import { MaterialConsumption } from './material-consumption.entity';
 import {
   CreateMaterialConsumptionDto,
   UpdateMaterialConsumptionDto,
 } from './material-consumption.dto';
+import { AuthGuard } from '@nestjs/passport';
 
 @Controller('material-consumption')
+@UseGuards(AuthGuard('jwt'))
 export class MaterialConsumptionController {
   constructor(
     private readonly materialConsumptionService: MaterialConsumptionService,

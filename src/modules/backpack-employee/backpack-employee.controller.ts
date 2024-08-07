@@ -7,6 +7,7 @@ import {
   Query,
   Get,
   ParseIntPipe,
+  UseGuards,
 } from '@nestjs/common';
 import { BackpackEmployeeService } from './backpack-employee.service';
 import {
@@ -14,8 +15,10 @@ import {
   UpdateBackpackEmployeeDto,
 } from './backpack-employee.dto';
 import { BackpackEmployee } from './backpack-employee.entity';
+import { AuthGuard } from '@nestjs/passport';
 
 @Controller('backpack-employee')
+@UseGuards(AuthGuard('jwt'))
 export class BackpackEmployeeController {
   constructor(
     private readonly backpackEmployeeService: BackpackEmployeeService,

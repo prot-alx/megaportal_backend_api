@@ -6,7 +6,6 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtStrategy } from './jwt.strategy';
 import { EmployeeModule } from 'src/modules/employee/employee.module';
 
-
 @Module({
   imports: [
     ConfigModule,

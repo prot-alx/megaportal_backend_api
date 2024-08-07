@@ -1,9 +1,19 @@
-import { Controller, Get, Post, Body, Param, Put } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  Put,
+  UseGuards,
+} from '@nestjs/common';
 import { RequestDataService } from './request-data.service';
 import { RequestData } from './request-data.entity';
 import { CreateRequestDataDto, UpdateRequestDataDto } from './request-data.dto';
+import { AuthGuard } from '@nestjs/passport';
 
 @Controller('request-data')
+@UseGuards(AuthGuard('jwt'))
 export class RequestDataController {
   constructor(private readonly requestDataService: RequestDataService) {}
 

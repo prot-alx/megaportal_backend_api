@@ -8,8 +8,9 @@ import { AuthModule } from './auth/auth.module';
 import { entities } from './modules/entities';
 import { modules } from './modules/modules';
 import configuration from './config/configuration';
-import { APP_FILTER } from '@nestjs/core';
+import { APP_FILTER, APP_GUARD } from '@nestjs/core';
 import { AllExceptionsFilter } from './error/all-exceptions.filter';
+import { RolesGuard } from './common/guards/roles.guard';
 
 @Module({
   imports: [
@@ -48,6 +49,10 @@ import { AllExceptionsFilter } from './error/all-exceptions.filter';
     {
       provide: APP_FILTER,
       useClass: AllExceptionsFilter,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: RolesGuard,
     },
     AuthService,
     JwtStrategy,
