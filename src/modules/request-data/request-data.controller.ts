@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, Put, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Put } from '@nestjs/common';
 import { RequestDataService } from './request-data.service';
 import { RequestData } from './request-data.entity';
 import { CreateRequestDataDto, UpdateRequestDataDto } from './request-data.dto';
@@ -9,13 +9,18 @@ export class RequestDataController {
 
   // Эндпоинт для создания новой записи
   @Post()
-  async create(@Body() createRequestDataDto: CreateRequestDataDto): Promise<RequestData> {
+  async create(
+    @Body() createRequestDataDto: CreateRequestDataDto,
+  ): Promise<RequestData> {
     return this.requestDataService.create(createRequestDataDto);
   }
 
   // Эндпоинт для обновления записи по ID
   @Put(':id')
-  async update(@Param('id') id: number, @Body() updateRequestDataDto: UpdateRequestDataDto): Promise<RequestData> {
+  async update(
+    @Param('id') id: number,
+    @Body() updateRequestDataDto: UpdateRequestDataDto,
+  ): Promise<RequestData> {
     return this.requestDataService.update(id, updateRequestDataDto);
   }
 

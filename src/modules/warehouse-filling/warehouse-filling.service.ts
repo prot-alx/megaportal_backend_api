@@ -3,7 +3,10 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { WarehouseFilling } from './warehouse-filling.entity';
 import { Material } from '../material/material.entity';
-import { CreateWarehouseFillingDto, UpdateWarehouseFillingDto } from './warehouse-filling.dto';
+import {
+  CreateWarehouseFillingDto,
+  UpdateWarehouseFillingDto,
+} from './warehouse-filling.dto';
 
 @Injectable()
 export class WarehouseFillingService {
@@ -11,16 +14,18 @@ export class WarehouseFillingService {
     @InjectRepository(WarehouseFilling)
     private readonly warehouseFillingRepository: Repository<WarehouseFilling>,
     @InjectRepository(Material)
-    private readonly materialRepository: Repository<Material>
+    private readonly materialRepository: Repository<Material>,
   ) {}
 
   // Метод для создания записи о наличии материала на складе
-  async create(createWarehouseFillingDto: CreateWarehouseFillingDto): Promise<WarehouseFilling> {
+  async create(
+    createWarehouseFillingDto: CreateWarehouseFillingDto,
+  ): Promise<WarehouseFilling> {
     const { materialId, count } = createWarehouseFillingDto;
 
     // Проверка существования материала
     const material = await this.materialRepository.findOne({
-      where: { id: materialId }
+      where: { id: materialId },
     });
     if (!material) {
       throw new NotFoundException(`Material with ID ${materialId} not found`);
@@ -28,16 +33,19 @@ export class WarehouseFillingService {
 
     const newWarehouseFilling = this.warehouseFillingRepository.create({
       material,
-      count
+      count,
     });
 
     return await this.warehouseFillingRepository.save(newWarehouseFilling);
   }
 
   // Метод для обновления записи о наличии материала на складе
-  async update(id: number, updateWarehouseFillingDto: UpdateWarehouseFillingDto): Promise<WarehouseFilling> {
+  async update(
+    id: number,
+    updateWarehouseFillingDto: UpdateWarehouseFillingDto,
+  ): Promise<WarehouseFilling> {
     const warehouseFilling = await this.warehouseFillingRepository.findOne({
-      where: { id }
+      where: { id },
     });
 
     if (!warehouseFilling) {
@@ -47,14 +55,16 @@ export class WarehouseFillingService {
     const { materialId, count } = updateWarehouseFillingDto;
 
     // Обновление материала, если он передан
-    const material = materialId ? await this.materialRepository.findOne({ where: { id: materialId } }) : warehouseFilling.material;
+    const material = materialId
+      ? await this.materialRepository.findOne({ where: { id: materialId } })
+      : warehouseFilling.material;
     if (materialId && !material) {
       throw new NotFoundException(`Material with ID ${materialId} not found`);
     }
 
     this.warehouseFillingRepository.merge(warehouseFilling, {
       material,
-      count
+      count,
     });
 
     return await this.warehouseFillingRepository.save(warehouseFilling);
@@ -69,7 +79,7 @@ export class WarehouseFillingService {
   async findOne(id: number): Promise<WarehouseFilling> {
     const warehouseFilling = await this.warehouseFillingRepository.findOne({
       where: { id },
-      relations: ['material']
+      relations: ['material'],
     });
 
     if (!warehouseFilling) {

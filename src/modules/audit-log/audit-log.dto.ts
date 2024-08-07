@@ -1,5 +1,5 @@
 import { Type } from 'class-transformer';
-import { IsString, IsOptional, IsObject, IsInt, IsDate, } from 'class-validator';
+import { IsString, IsOptional, IsObject, IsInt, IsDate } from 'class-validator';
 
 export class CreateAuditLogDto {
   @IsInt()

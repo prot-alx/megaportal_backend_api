@@ -1,4 +1,11 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, CreateDateColumn } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  ManyToOne,
+  JoinColumn,
+  CreateDateColumn,
+} from 'typeorm';
 import { Employee } from '../employee/employee.entity';
 
 @Entity('audit_log')
@@ -21,7 +28,7 @@ export class AuditLog {
 
   @CreateDateColumn()
   action_time: Date;
-  
+
   @Column({ type: 'jsonb', nullable: true })
   details: Record<string, any>;
 }

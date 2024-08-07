@@ -2,7 +2,10 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { MaterialConsumption } from './material-consumption.entity';
-import { CreateMaterialConsumptionDto, UpdateMaterialConsumptionDto } from './material-consumption.dto';
+import {
+  CreateMaterialConsumptionDto,
+  UpdateMaterialConsumptionDto,
+} from './material-consumption.dto';
 
 @Injectable()
 export class MaterialConsumptionService {
@@ -11,15 +14,25 @@ export class MaterialConsumptionService {
     private materialConsumptionRepository: Repository<MaterialConsumption>,
   ) {}
 
-  async create(createMaterialConsumptionDto: CreateMaterialConsumptionDto): Promise<MaterialConsumption> {
-    const materialConsumption = this.materialConsumptionRepository.create(createMaterialConsumptionDto);
+  async create(
+    createMaterialConsumptionDto: CreateMaterialConsumptionDto,
+  ): Promise<MaterialConsumption> {
+    const materialConsumption = this.materialConsumptionRepository.create(
+      createMaterialConsumptionDto,
+    );
     return this.materialConsumptionRepository.save(materialConsumption);
   }
 
-  async update(id: number, updateMaterialConsumptionDto: UpdateMaterialConsumptionDto): Promise<MaterialConsumption> {
-    const materialConsumption = await this.materialConsumptionRepository.findOne({ where: { id } });
+  async update(
+    id: number,
+    updateMaterialConsumptionDto: UpdateMaterialConsumptionDto,
+  ): Promise<MaterialConsumption> {
+    const materialConsumption =
+      await this.materialConsumptionRepository.findOne({ where: { id } });
     if (!materialConsumption) {
-      throw new NotFoundException(`MaterialConsumption with ID ${id} not found`);
+      throw new NotFoundException(
+        `MaterialConsumption with ID ${id} not found`,
+      );
     }
 
     // Only update the approved field
@@ -32,9 +45,12 @@ export class MaterialConsumptionService {
   }
 
   async findOne(id: number): Promise<MaterialConsumption> {
-    const materialConsumption = await this.materialConsumptionRepository.findOne({ where: { id } });
+    const materialConsumption =
+      await this.materialConsumptionRepository.findOne({ where: { id } });
     if (!materialConsumption) {
-      throw new NotFoundException(`MaterialConsumption with ID ${id} not found`);
+      throw new NotFoundException(
+        `MaterialConsumption with ID ${id} not found`,
+      );
     }
     return materialConsumption;
   }

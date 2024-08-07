@@ -1,13 +1,22 @@
-import { ExceptionFilter, Catch, ArgumentsHost, HttpException, HttpStatus } from '@nestjs/common';
+import {
+  ExceptionFilter,
+  Catch,
+  ArgumentsHost,
+  HttpException,
+  HttpStatus,
+} from '@nestjs/common';
 import { Request, Response } from 'express';
 
 export class DetailedInternalServerErrorException extends HttpException {
   constructor(message: string, details?: any) {
-    super({
-      statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-      message,
-      details,
-    }, HttpStatus.INTERNAL_SERVER_ERROR);
+    super(
+      {
+        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+        message,
+        details,
+      },
+      HttpStatus.INTERNAL_SERVER_ERROR,
+    );
   }
 }
 @Catch()
@@ -21,7 +30,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
         ? exception.getStatus()
         : HttpStatus.INTERNAL_SERVER_ERROR;
 
-    // Если это ваше пользовательское исключение
+    //Дополнительное кастомное исключение с подробностями
     if (exception instanceof DetailedInternalServerErrorException) {
       response.status(status).json({
         statusCode: status,

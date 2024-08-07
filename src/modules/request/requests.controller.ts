@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, Put, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Put } from '@nestjs/common';
 import { RequestsService } from './requests.service';
 import { Requests } from './requests.entity';
 import { CreateRequestDto, UpdateRequestDto } from './request.dto';
@@ -13,7 +13,10 @@ export class RequestsController {
   }
 
   @Put(':id')
-  async update(@Param('id') id: number, @Body() updateRequestDto: UpdateRequestDto): Promise<Requests> {
+  async update(
+    @Param('id') id: number,
+    @Body() updateRequestDto: UpdateRequestDto,
+  ): Promise<Requests> {
     return this.requestsService.update(id, updateRequestDto);
   }
 

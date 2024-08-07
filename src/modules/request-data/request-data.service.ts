@@ -14,16 +14,18 @@ export class RequestDataService {
     @InjectRepository(Requests)
     private readonly requestsRepository: Repository<Requests>,
     @InjectRepository(Employee)
-    private readonly employeeRepository: Repository<Employee>
+    private readonly employeeRepository: Repository<Employee>,
   ) {}
 
   // Метод для создания записи о назначении сотрудников на заявку
-  async create(createRequestDataDto: CreateRequestDataDto): Promise<RequestData> {
+  async create(
+    createRequestDataDto: CreateRequestDataDto,
+  ): Promise<RequestData> {
     const { requestId, executorId, performerId } = createRequestDataDto;
 
     // Проверка существования заявки
     const request = await this.requestsRepository.findOne({
-      where: { id: requestId }
+      where: { id: requestId },
     });
     if (!request) {
       throw new NotFoundException(`Request with ID ${requestId} not found`);
@@ -31,10 +33,10 @@ export class RequestDataService {
 
     // Проверка существования сотрудников
     const executor = await this.employeeRepository.findOne({
-      where: { id: executorId }
+      where: { id: executorId },
     });
     const performer = await this.employeeRepository.findOne({
-      where: { id: performerId }
+      where: { id: performerId },
     });
     if (!executor || !performer) {
       throw new NotFoundException('Executor or Performer not found');
@@ -43,16 +45,19 @@ export class RequestDataService {
     const newRequestData = this.requestDataRepository.create({
       request,
       executor,
-      performer
+      performer,
     });
 
     return await this.requestDataRepository.save(newRequestData);
   }
 
   // Метод для обновления записи о назначении сотрудников на заявку
-  async update(id: number, updateRequestDataDto: UpdateRequestDataDto): Promise<RequestData> {
+  async update(
+    id: number,
+    updateRequestDataDto: UpdateRequestDataDto,
+  ): Promise<RequestData> {
     const requestData = await this.requestDataRepository.findOne({
-      where: { id }
+      where: { id },
     });
 
     if (!requestData) {
@@ -62,9 +67,15 @@ export class RequestDataService {
     const { requestId, executorId, performerId } = updateRequestDataDto;
 
     // Обновление заявки и сотрудников, если они переданы
-    const request = requestId ? await this.requestsRepository.findOne({ where: { id: requestId } }) : requestData.request;
-    const executor = executorId ? await this.employeeRepository.findOne({ where: { id: executorId } }) : requestData.executor;
-    const performer = performerId ? await this.employeeRepository.findOne({ where: { id: performerId } }) : requestData.performer;
+    const request = requestId
+      ? await this.requestsRepository.findOne({ where: { id: requestId } })
+      : requestData.request;
+    const executor = executorId
+      ? await this.employeeRepository.findOne({ where: { id: executorId } })
+      : requestData.executor;
+    const performer = performerId
+      ? await this.employeeRepository.findOne({ where: { id: performerId } })
+      : requestData.performer;
 
     if (requestId && !request) {
       throw new NotFoundException(`Request with ID ${requestId} not found`);
@@ -79,7 +90,7 @@ export class RequestDataService {
     this.requestDataRepository.merge(requestData, {
       request,
       executor,
-      performer
+      performer,
     });
 
     return await this.requestDataRepository.save(requestData);
@@ -87,14 +98,16 @@ export class RequestDataService {
 
   // Метод для получения всех записей
   async findAll(): Promise<RequestData[]> {
-    return this.requestDataRepository.find({ relations: ['request', 'executor', 'performer'] });
+    return this.requestDataRepository.find({
+      relations: ['request', 'executor', 'performer'],
+    });
   }
 
   // Метод для получения записи по ID
   async findOne(id: number): Promise<RequestData> {
     const requestData = await this.requestDataRepository.findOne({
       where: { id },
-      relations: ['request', 'executor', 'performer']
+      relations: ['request', 'executor', 'performer'],
     });
 
     if (!requestData) {

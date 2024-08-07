@@ -1,4 +1,10 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+} from 'typeorm';
 
 export enum EmployeeRole {
   Admin = 'Admin',
@@ -12,16 +18,16 @@ export class Employee {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column({ nullable: true, name: 'external_id' })
-  externalId: string;
+  @Column({ nullable: true })
+  external_id: string;
 
   @Column({ nullable: true })
   name: string;
 
-  @Column()
+  @Column({ nullable: false })
   login: string;
 
-  @Column()
+  @Column({ nullable: false })
   password: string;
 
   @Column({ nullable: true })
@@ -30,11 +36,11 @@ export class Employee {
   @Column({ nullable: true })
   phone: string;
 
-  @Column({ type: 'enum', enum: EmployeeRole, nullable: true })
+  @Column({ type: 'enum', enum: EmployeeRole })
   role: EmployeeRole;
 
-  @Column({ default: true, name: 'is_active' })
-  isActive: boolean;
+  @Column({ nullable: false })
+  is_active: boolean;
 
   @CreateDateColumn()
   created_at: Date;

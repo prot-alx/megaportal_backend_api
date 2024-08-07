@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Delete, Body, Param } from '@nestjs/common';
+import { Controller, Get, Post, Put, Body, Param } from '@nestjs/common';
 import { EmployeeService } from './employee.service';
 import { Employee } from './employee.entity';
 import { CreateEmployeeDto, UpdateEmployeeDto } from './employee.dto';
@@ -13,7 +13,9 @@ export class EmployeeController {
   }
 
   @Post()
-  async create(@Body() createEmployeeDto: CreateEmployeeDto): Promise<Employee> {
+  async create(
+    @Body() createEmployeeDto: CreateEmployeeDto,
+  ): Promise<Employee> {
     return this.employeeService.create(createEmployeeDto);
   }
 

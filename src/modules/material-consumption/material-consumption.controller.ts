@@ -1,14 +1,21 @@
 import { Controller, Get, Post, Put, Param, Body } from '@nestjs/common';
 import { MaterialConsumptionService } from './material-consumption.service';
 import { MaterialConsumption } from './material-consumption.entity';
-import { CreateMaterialConsumptionDto, UpdateMaterialConsumptionDto } from './material-consumption.dto';
+import {
+  CreateMaterialConsumptionDto,
+  UpdateMaterialConsumptionDto,
+} from './material-consumption.dto';
 
 @Controller('material-consumption')
 export class MaterialConsumptionController {
-  constructor(private readonly materialConsumptionService: MaterialConsumptionService) {}
+  constructor(
+    private readonly materialConsumptionService: MaterialConsumptionService,
+  ) {}
 
   @Post()
-  async create(@Body() createMaterialConsumptionDto: CreateMaterialConsumptionDto): Promise<MaterialConsumption> {
+  async create(
+    @Body() createMaterialConsumptionDto: CreateMaterialConsumptionDto,
+  ): Promise<MaterialConsumption> {
     return this.materialConsumptionService.create(createMaterialConsumptionDto);
   }
 
@@ -17,7 +24,10 @@ export class MaterialConsumptionController {
     @Param('id') id: number,
     @Body() updateMaterialConsumptionDto: UpdateMaterialConsumptionDto,
   ): Promise<MaterialConsumption> {
-    return this.materialConsumptionService.update(id, updateMaterialConsumptionDto);
+    return this.materialConsumptionService.update(
+      id,
+      updateMaterialConsumptionDto,
+    );
   }
 
   @Get()

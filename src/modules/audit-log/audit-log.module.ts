@@ -6,9 +6,7 @@ import { AuditLog } from './audit-log.entity';
 import { Employee } from '../employee/employee.entity';
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([AuditLog, Employee]),
-  ],
+  imports: [TypeOrmModule.forFeature([AuditLog, Employee])],
   providers: [AuditLogService],
   controllers: [AuditLogController],
   exports: [AuditLogService],

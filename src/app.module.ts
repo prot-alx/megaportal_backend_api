@@ -1,6 +1,10 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { JwtModule } from '@nestjs/jwt';
+import { JwtStrategy } from './auth/jwt.strategy';
+import { AuthService } from './auth/auth.service';
+import { AuthModule } from './auth/auth.module';
 import { entities } from './modules/entities';
 import { modules } from './modules/modules';
 import configuration from './config/configuration';
@@ -27,6 +31,17 @@ import { AllExceptionsFilter } from './error/all-exceptions.filter';
       }),
       inject: [ConfigService],
     }),
+    JwtModule.registerAsync({
+      imports: [ConfigModule],
+      useFactory: async (configService: ConfigService) => ({
+        secret: configService.get<string>('SECRET_JWT'),
+        signOptions: {
+          expiresIn: configService.get<string | number>('EXPIRE_JWT'),
+        },
+      }),
+      inject: [ConfigService],
+    }),
+    AuthModule,
     ...modules,
   ],
   providers: [
@@ -34,7 +49,8 @@ import { AllExceptionsFilter } from './error/all-exceptions.filter';
       provide: APP_FILTER,
       useClass: AllExceptionsFilter,
     },
+    AuthService,
+    JwtStrategy,
   ],
 })
-
 export class AppModule {}

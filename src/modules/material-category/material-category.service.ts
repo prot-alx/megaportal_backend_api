@@ -1,8 +1,11 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
-import { InjectRepository } from "@nestjs/typeorm";
-import { Repository } from "typeorm";
-import { CreateMaterialCategoryDto, UpdateMaterialCategoryDto } from "./material-category.dto";
-import { MaterialCategory } from "./material-category.entity";
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import {
+  CreateMaterialCategoryDto,
+  UpdateMaterialCategoryDto,
+} from './material-category.dto';
+import { MaterialCategory } from './material-category.entity';
 
 @Injectable()
 export class MaterialCategoryService {
@@ -11,13 +14,22 @@ export class MaterialCategoryService {
     private materialCategoryRepository: Repository<MaterialCategory>,
   ) {}
 
-  async create(createMaterialCategoryDto: CreateMaterialCategoryDto): Promise<MaterialCategory> {
-    const materialCategory = this.materialCategoryRepository.create(createMaterialCategoryDto);
+  async create(
+    createMaterialCategoryDto: CreateMaterialCategoryDto,
+  ): Promise<MaterialCategory> {
+    const materialCategory = this.materialCategoryRepository.create(
+      createMaterialCategoryDto,
+    );
     return this.materialCategoryRepository.save(materialCategory);
   }
 
-  async update(id: number, updateMaterialCategoryDto: UpdateMaterialCategoryDto): Promise<MaterialCategory> {
-    const materialCategory = await this.materialCategoryRepository.findOne({ where: { id } });
+  async update(
+    id: number,
+    updateMaterialCategoryDto: UpdateMaterialCategoryDto,
+  ): Promise<MaterialCategory> {
+    const materialCategory = await this.materialCategoryRepository.findOne({
+      where: { id },
+    });
     if (!materialCategory) {
       throw new NotFoundException(`MaterialCategory with ID ${id} not found`);
     }
@@ -31,7 +43,9 @@ export class MaterialCategoryService {
   }
 
   async findOne(id: number): Promise<MaterialCategory> {
-    const materialCategory = await this.materialCategoryRepository.findOne({ where: { id } });
+    const materialCategory = await this.materialCategoryRepository.findOne({
+      where: { id },
+    });
     if (!materialCategory) {
       throw new NotFoundException(`MaterialCategory with ID ${id} not found`);
     }
