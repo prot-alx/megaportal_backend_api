@@ -34,27 +34,30 @@ export class Requests {
 
   @ManyToOne(() => Employee)
   @JoinColumn({ name: 'hr_id' })
-  hr: Employee;
-
-  @Column({ nullable: true, name: 'ep_id' })
-  epId: string;
+  hr_id: Employee;
 
   @Column({ nullable: true })
+  ep_id: string;
+
+  @Column({ nullable: false })
+  client_id: string;
+
+  @Column({ nullable: false })
   description: string;
 
-  @Column({ nullable: true })
+  @Column({ nullable: false })
   address: string;
 
-  @Column({ name: 'request_date' })
-  requestDate: Date;
+  @Column({ type: 'date', nullable: false }) // Тип 'date' для хранения даты
+  request_date: Date;
 
-  @Column({ type: 'enum', enum: RequestType, nullable: true })
+  @Column({ type: 'enum', enum: RequestType, nullable: false })
   type: RequestType;
 
   @Column({ nullable: true })
   comment: string;
 
-  @Column({ type: 'enum', enum: RequestStatus, nullable: true })
+  @Column({ type: 'enum', enum: RequestStatus, nullable: false })
   status: RequestStatus;
 
   @CreateDateColumn()

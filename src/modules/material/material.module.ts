@@ -9,7 +9,12 @@ import { MaterialSubtype } from '../material-subtype/material-subtype.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Material, MaterialCategory, MaterialType, MaterialSubtype]),
+    TypeOrmModule.forFeature([
+      Material,
+      MaterialCategory,
+      MaterialType,
+      MaterialSubtype,
+    ]),
   ],
   providers: [MaterialService],
   controllers: [MaterialController],

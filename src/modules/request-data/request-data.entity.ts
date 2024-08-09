@@ -20,11 +20,11 @@ export class RequestData {
 
   @ManyToOne(() => Employee)
   @JoinColumn({ name: 'executor_id' })
-  executor: Employee;
+  executor_id: Employee;
 
   @ManyToOne(() => Employee)
   @JoinColumn({ name: 'performer_id' })
-  performer: Employee;
+  performer_id: Employee;
 
   @CreateDateColumn()
   created_at: Date;

@@ -5,10 +5,13 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { RequestData } from './request-data.entity';
 import { Requests } from '../request/requests.entity';
 import { Employee } from '../employee/employee.entity';
+import { EmployeeService } from '../employee/employee.service';
+import { RequestsService } from '../request/requests.service';
+import { JwtService } from '@nestjs/jwt';
 
 @Module({
   imports: [TypeOrmModule.forFeature([RequestData, Requests, Employee])],
-  providers: [RequestDataService],
+  providers: [RequestDataService, RequestsService, EmployeeService, JwtService],
   controllers: [RequestDataController],
   exports: [RequestDataService],
 })

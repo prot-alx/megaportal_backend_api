@@ -1,26 +1,11 @@
-import { IsInt, IsOptional } from 'class-validator';
+import { IsNotEmpty, IsNumber } from 'class-validator';
 
-export class CreateRequestDataDto {
-  @IsInt()
-  requestId: number;
+export class RequestDataDto {
+  @IsNotEmpty()
+  @IsNumber()
+  request_id: number;
 
-  @IsInt()
-  executorId: number;
-
-  @IsInt()
-  performerId: number;
-}
-
-export class UpdateRequestDataDto {
-  @IsOptional()
-  @IsInt()
-  requestId?: number;
-
-  @IsOptional()
-  @IsInt()
-  executorId?: number;
-
-  @IsOptional()
-  @IsInt()
-  performerId?: number;
+  @IsNotEmpty()
+  @IsNumber()
+  performer_id: number;
 }

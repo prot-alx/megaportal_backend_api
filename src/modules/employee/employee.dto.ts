@@ -37,3 +37,12 @@ export class UpdateEmployeeDto {
   @IsBoolean()
   is_active?: boolean;
 }
+
+export class UserResponseDto {
+  @IsString()
+  id: number;
+
+  @IsOptional()
+  @IsString()
+  name?: string;
+}

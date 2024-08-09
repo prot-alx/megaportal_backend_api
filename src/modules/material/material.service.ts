@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Material } from './material.entity';
@@ -15,8 +19,14 @@ export class MaterialService {
     private materialRepository: Repository<Material>,
   ) {}
 
-  private async isMaterialUnique(category_id: number, type_id: number, subtype_id: number, excludeId?: number): Promise<boolean> {
-    const query = this.materialRepository.createQueryBuilder('material')
+  private async isMaterialUnique(
+    category_id: number,
+    type_id: number,
+    subtype_id: number,
+    excludeId?: number,
+  ): Promise<boolean> {
+    const query = this.materialRepository
+      .createQueryBuilder('material')
       .where('material.category_id = :category_id', { category_id })
       .andWhere('material.type_id = :type_id', { type_id })
       .andWhere('material.subtype_id = :subtype_id', { subtype_id });
@@ -30,24 +40,45 @@ export class MaterialService {
   }
 
   async create(createMaterialDto: CreateMaterialDto): Promise<Material> {
-    const { category_id, type_id, subtype_id, sap_number, serial, inventory_number } = createMaterialDto;
-  
+    const {
+      category_id,
+      type_id,
+      subtype_id,
+      sap_number,
+      serial,
+      inventory_number,
+    } = createMaterialDto;
+
     // Проверка уникальности комбинации полей
-    const isUnique = await this.isMaterialUnique(category_id, type_id, subtype_id);
+    const isUnique = await this.isMaterialUnique(
+      category_id,
+      type_id,
+      subtype_id,
+    );
     if (!isUnique) {
-      throw new ConflictException('Material with the same combination of category, type, and subtype already exists');
+      throw new ConflictException(
+        'Material with the same combination of category, type, and subtype already exists',
+      );
     }
-  
+
     try {
       // Найти соответствующие объекты по идентификаторам
-      const category = await this.materialRepository.manager.findOne(MaterialCategory, { where: { id: category_id } });
-      const type = await this.materialRepository.manager.findOne(MaterialType, { where: { id: type_id } });
-      const subtype = await this.materialRepository.manager.findOne(MaterialSubtype, { where: { id: subtype_id } });
-  
+      const category = await this.materialRepository.manager.findOne(
+        MaterialCategory,
+        { where: { id: category_id } },
+      );
+      const type = await this.materialRepository.manager.findOne(MaterialType, {
+        where: { id: type_id },
+      });
+      const subtype = await this.materialRepository.manager.findOne(
+        MaterialSubtype,
+        { where: { id: subtype_id } },
+      );
+
       if (!category || !type || !subtype) {
         throw new NotFoundException('One or more related entities not found');
       }
-  
+
       // Создание нового материала
       const material = this.materialRepository.create({
         sap_number,
@@ -58,14 +89,20 @@ export class MaterialService {
         type_id: type,
         subtype_id: subtype,
       });
-  
+
       return await this.materialRepository.save(material);
     } catch (error) {
-      throw new DetailedInternalServerErrorException('Error creating material', error.message);
+      throw new DetailedInternalServerErrorException(
+        'Error creating material',
+        error.message,
+      );
     }
   }
 
-  async update(id: number, updateMaterialDto: UpdateMaterialDto): Promise<Material> {
+  async update(
+    id: number,
+    updateMaterialDto: UpdateMaterialDto,
+  ): Promise<Material> {
     const material = await this.materialRepository.findOne({ where: { id } });
     if (!material) {
       throw new NotFoundException(`Material with ID ${id} not found`);
@@ -74,9 +111,16 @@ export class MaterialService {
     const { category_id, type_id, subtype_id } = updateMaterialDto;
 
     // Проверка уникальности комбинации полей
-    const isUnique = await this.isMaterialUnique(category_id, type_id, subtype_id, id);
+    const isUnique = await this.isMaterialUnique(
+      category_id,
+      type_id,
+      subtype_id,
+      id,
+    );
     if (!isUnique) {
-      throw new ConflictException('Material with the same combination of category, type, and subtype already exists');
+      throw new ConflictException(
+        'Material with the same combination of category, type, and subtype already exists',
+      );
     }
 
     Object.assign(material, updateMaterialDto);
@@ -84,7 +128,10 @@ export class MaterialService {
     try {
       return await this.materialRepository.save(material);
     } catch (error) {
-      throw new DetailedInternalServerErrorException('Error updating material', error.message);
+      throw new DetailedInternalServerErrorException(
+        'Error updating material',
+        error.message,
+      );
     }
   }
 
@@ -94,7 +141,10 @@ export class MaterialService {
         relations: ['category_id', 'type_id', 'subtype_id'],
       });
     } catch (error) {
-      throw new DetailedInternalServerErrorException('Error retrieving materials', error.message);
+      throw new DetailedInternalServerErrorException(
+        'Error retrieving materials',
+        error.message,
+      );
     }
   }
 

@@ -67,8 +67,8 @@ export class BackpackEmployeeService {
     return backpackEmployee;
   }
 
-   // Метод для получения всех записей backpack_employee
-   async findAll(): Promise<BackpackEmployee[]> {
+  // Метод для получения всех записей backpack_employee
+  async findAll(): Promise<BackpackEmployee[]> {
     return this.backpackEmployeeRepository.find();
   }
 
@@ -79,7 +79,9 @@ export class BackpackEmployeeService {
     });
 
     if (!records.length) {
-      throw new NotFoundException(`No records found for employee with ID ${employeeId}`);
+      throw new NotFoundException(
+        `No records found for employee with ID ${employeeId}`,
+      );
     }
 
     return records;

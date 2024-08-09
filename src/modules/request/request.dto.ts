@@ -1,25 +1,35 @@
-import { IsString, IsEnum, IsOptional, IsDate, IsInt } from 'class-validator';
+import {
+  IsString,
+  IsEnum,
+  IsOptional,
+  IsInt,
+  IsNotEmpty,
+} from 'class-validator';
 import { RequestType, RequestStatus } from './requests.entity';
 
 export class CreateRequestDto {
   @IsOptional()
   @IsString()
-  epId?: string;
+  ep_id?: string;
 
-  @IsOptional()
   @IsString()
-  description?: string;
+  client_id: string;
 
-  @IsOptional()
+  @IsNotEmpty()
   @IsString()
-  address?: string;
+  description: string;
 
-  @IsDate()
-  requestDate: Date;
+  @IsNotEmpty()
+  @IsString()
+  address: string;
 
-  @IsOptional()
+  @IsNotEmpty()
+  @IsString()
+  request_date: string;
+
+  @IsNotEmpty()
   @IsEnum(RequestType)
-  type?: RequestType;
+  type: RequestType;
 
   @IsOptional()
   @IsString()
@@ -27,17 +37,17 @@ export class CreateRequestDto {
 
   @IsOptional()
   @IsEnum(RequestStatus)
-  status?: RequestStatus;
-
-  @IsOptional()
-  @IsInt()
-  hrId?: number; // Optional HR ID for creating or updating
+  status?: RequestStatus = RequestStatus.NEW;
 }
 
 export class UpdateRequestDto {
   @IsOptional()
   @IsString()
-  epId?: string;
+  ep_id?: string;
+
+  @IsOptional()
+  @IsString()
+  client_id?: string;
 
   @IsOptional()
   @IsString()
@@ -47,9 +57,9 @@ export class UpdateRequestDto {
   @IsString()
   address?: string;
 
-  @IsOptional()
-  @IsDate()
-  requestDate?: Date;
+  @IsNotEmpty()
+  @IsString()
+  request_date?: string;
 
   @IsOptional()
   @IsEnum(RequestType)
@@ -65,5 +75,5 @@ export class UpdateRequestDto {
 
   @IsOptional()
   @IsInt()
-  hrId?: number; // Optional HR ID for updating
+  hr_id?: number;
 }

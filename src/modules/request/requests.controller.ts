@@ -1,7 +1,15 @@
-import { Controller, Get, Post, Body, Param, Put, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  Get,
+  UseGuards,
+  Req,
+  UnauthorizedException,
+  HttpCode,
+} from '@nestjs/common';
 import { RequestsService } from './requests.service';
-import { Requests } from './requests.entity';
-import { CreateRequestDto, UpdateRequestDto } from './request.dto';
+import { CreateRequestDto } from './request.dto';
 import { AuthGuard } from '@nestjs/passport';
 
 @Controller('requests')
@@ -10,25 +18,26 @@ export class RequestsController {
   constructor(private readonly requestsService: RequestsService) {}
 
   @Post()
-  async create(@Body() createRequestDto: CreateRequestDto): Promise<Requests> {
-    return this.requestsService.create(createRequestDto);
+  @HttpCode(201)
+  async create(
+    @Body() createRequestDto: CreateRequestDto,
+    @Req() req: Request,
+  ) {
+    const token = req.headers['authorization']?.split(' ')[1];
+    if (!token) {
+      throw new UnauthorizedException('Token is missing');
+    }
+    return this.requestsService.create(createRequestDto, token);
   }
 
-  @Put(':id')
-  async update(
-    @Param('id') id: number,
-    @Body() updateRequestDto: UpdateRequestDto,
-  ): Promise<Requests> {
-    return this.requestsService.update(id, updateRequestDto);
+  @Get('me')
+  async getCurrentUser(@Req() req: Request) {
+    const token = req.headers['authorization'].split(' ')[1];
+    return this.requestsService.getCurrentUser(token);
   }
 
   @Get()
-  async findAll(): Promise<Requests[]> {
+  async findAll() {
     return this.requestsService.findAll();
-  }
-
-  @Get(':id')
-  async findOne(@Param('id') id: number): Promise<Requests> {
-    return this.requestsService.findOne(id);
   }
 }

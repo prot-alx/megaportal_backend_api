@@ -30,7 +30,10 @@ export class AllExceptionsFilter implements ExceptionFilter {
         ? exception.getStatus()
         : HttpStatus.INTERNAL_SERVER_ERROR;
 
-    //Дополнительное кастомное исключение с подробностями
+    // Логирование ошибки
+    console.error('Exception caught:', exception);
+
+    // Дополнительное кастомное исключение с подробностями
     if (exception instanceof DetailedInternalServerErrorException) {
       response.status(status).json({
         statusCode: status,
