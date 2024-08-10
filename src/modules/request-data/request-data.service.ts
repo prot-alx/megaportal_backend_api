@@ -10,6 +10,7 @@ import { RequestData } from './request-data.entity';
 import { Employee, EmployeeRole } from '../employee/employee.entity';
 import { Requests, RequestStatus } from '../request/requests.entity';
 import { UserResponseDto } from '../employee/employee.dto';
+import { DetailedInternalServerErrorException } from 'src/error/all-exceptions.filter';
 
 @Injectable()
 export class RequestDataService {
@@ -28,38 +29,54 @@ export class RequestDataService {
     userId: number,
     roles: EmployeeRole[],
   ): Promise<void> {
-    const employee = await this.employeeRepository.findOne({
-      where: { id: userId },
-    });
+    try {
+      const employee = await this.employeeRepository.findOne({
+        where: { id: userId },
+      });
 
-    if (!employee || !roles.includes(employee.role)) {
-      throw new ForbiddenException(
-        'You do not have permission to change the status of this request',
+      if (!employee || !roles.includes(employee.role)) {
+        throw new ForbiddenException(
+          'You do not have permission to change the status of this request',
+        );
+      }
+
+      if (request.status === RequestStatus.CLOSED) {
+        throw new ForbiddenException(
+          'Request is closed and cannot be modified',
+        );
+      }
+
+      const isPerformer = await this.requestDataRepository.findOne({
+        where: {
+          request: { id: request.id },
+          performer_id: { id: userId },
+        },
+      });
+
+      if (employee.role === EmployeeRole.Performer && !isPerformer) {
+        throw new ForbiddenException('You are not assigned to this request');
+      }
+    } catch (error) {
+      throw new DetailedInternalServerErrorException(
+        'Error validating access',
+        error.message,
       );
-    }
-
-    if (request.status === RequestStatus.CLOSED) {
-      throw new ForbiddenException('Request is closed and cannot be modified');
-    }
-
-    const isPerformer = await this.requestDataRepository.findOne({
-      where: {
-        request: { id: request.id },
-        performer_id: { id: userId },
-      },
-    });
-
-    if (employee.role === EmployeeRole.Performer && !isPerformer) {
-      throw new ForbiddenException('You are not assigned to this request');
     }
   }
 
   private extractUserIdFromToken(token: string): number {
-    const decodedToken = this.jwtService.decode(token);
-    if (!decodedToken?.id) {
-      throw new UnauthorizedException('Invalid or missing token');
+    try {
+      const decodedToken = this.jwtService.decode(token);
+      if (!decodedToken?.id) {
+        throw new UnauthorizedException('Invalid or missing token');
+      }
+      return decodedToken.id;
+    } catch (error) {
+      throw new DetailedInternalServerErrorException(
+        'Error extracting user ID from token',
+        error.message,
+      );
     }
-    return decodedToken.id;
   }
 
   private transformEmployeeToDto(employee: Employee): UserResponseDto {
@@ -74,129 +91,161 @@ export class RequestDataService {
     performerId: number,
     token: string,
   ): Promise<RequestData> {
-    const executorId = this.extractUserIdFromToken(token);
+    try {
+      const executorId = this.extractUserIdFromToken(token);
 
-    // Находим сущности заявок и сотрудников
-    const request = await this.requestsRepository.findOne({
-      where: { id: requestId },
-    });
-    const executor = await this.employeeRepository.findOne({
-      where: { id: executorId },
-    });
-    const performer = await this.employeeRepository.findOne({
-      where: { id: performerId },
-    });
+      // Находим сущности заявок и сотрудников
+      const request = await this.requestsRepository.findOne({
+        where: { id: requestId },
+      });
+      const executor = await this.employeeRepository.findOne({
+        where: { id: executorId },
+      });
+      const performer = await this.employeeRepository.findOne({
+        where: { id: performerId },
+      });
 
-    if (!request || !executor || !performer) {
-      throw new UnauthorizedException('Request or Employee not found');
-    }
+      if (!request || !executor || !performer) {
+        throw new UnauthorizedException('Request or Employee not found');
+      }
 
-    // Проверяем, не назначен ли уже этот сотрудник на эту заявку
-    const existingAssignment = await this.requestDataRepository.findOne({
-      where: {
-        request: { id: requestId },
-        performer_id: { id: performerId },
-      },
-    });
+      // Проверяем, не назначен ли уже этот сотрудник на эту заявку
+      const existingAssignment = await this.requestDataRepository.findOne({
+        where: {
+          request: { id: requestId },
+          performer_id: { id: performerId },
+        },
+      });
 
-    if (existingAssignment) {
-      throw new UnauthorizedException(
-        'This performer is already assigned to the request',
+      if (existingAssignment) {
+        throw new UnauthorizedException(
+          'This performer is already assigned to the request',
+        );
+      }
+
+      // Изменяем статус заявки на IN_PROGRESS, если он сейчас NEW
+      if (request.status === RequestStatus.NEW) {
+        request.status = RequestStatus.IN_PROGRESS;
+        await this.requestsRepository.save(request);
+      }
+
+      const requestData = this.requestDataRepository.create({
+        request,
+        executor_id: executor,
+        performer_id: performer,
+      });
+
+      return await this.requestDataRepository.save(requestData);
+    } catch (error) {
+      throw new DetailedInternalServerErrorException(
+        'Error assigning request',
+        error.message,
       );
     }
-
-    // Изменяем статус заявки на IN_PROGRESS, если он сейчас NEW
-    if (request.status === RequestStatus.NEW) {
-      request.status = RequestStatus.IN_PROGRESS;
-      await this.requestsRepository.save(request);
-    }
-
-    const requestData = this.requestDataRepository.create({
-      request,
-      executor_id: executor,
-      performer_id: performer,
-    });
-
-    return this.requestDataRepository.save(requestData);
   }
 
   async removePerformer(requestId: number, performerId: number): Promise<void> {
-    const request = await this.requestsRepository.findOne({
-      where: { id: requestId },
-    });
+    try {
+      const request = await this.requestsRepository.findOne({
+        where: { id: requestId },
+      });
 
-    if (!request) {
-      throw new UnauthorizedException('Request not found');
-    }
+      if (!request) {
+        throw new UnauthorizedException('Request not found');
+      }
 
-    // Удаляем исполнителя
-    const deleteResult = await this.requestDataRepository.delete({
-      request: { id: requestId },
-      performer_id: { id: performerId },
-    });
+      // Удаляем исполнителя
+      const deleteResult = await this.requestDataRepository.delete({
+        request: { id: requestId },
+        performer_id: { id: performerId },
+      });
 
-    if (deleteResult.affected === 0) {
-      throw new UnauthorizedException('Performer not found for this request');
-    }
+      if (deleteResult.affected === 0) {
+        throw new UnauthorizedException('Performer not found for this request');
+      }
 
-    // Проверяем, остались ли еще исполнители для этой заявки
-    const remainingPerformers = await this.requestDataRepository.count({
-      where: { request: { id: requestId } },
-    });
+      // Проверяем, остались ли еще исполнители для этой заявки
+      const remainingPerformers = await this.requestDataRepository.count({
+        where: { request: { id: requestId } },
+      });
 
-    // Если исполнителей не осталось, меняем статус на NEW
-    if (remainingPerformers === 0) {
-      request.status = RequestStatus.NEW;
-      await this.requestsRepository.save(request);
+      // Если исполнителей не осталось, меняем статус на NEW
+      if (remainingPerformers === 0) {
+        request.status = RequestStatus.NEW;
+        await this.requestsRepository.save(request);
+      }
+    } catch (error) {
+      throw new DetailedInternalServerErrorException(
+        'Error removing performer',
+        error.message,
+      );
     }
   }
 
-  //Изменяем статус заявки
   async changeRequestStatus(
     requestId: number,
     newStatus: RequestStatus,
     token: string,
   ): Promise<void> {
-    const userId = this.extractUserIdFromToken(token);
-    const request = await this.requestsRepository.findOne({
-      where: { id: requestId },
-    });
+    try {
+      const userId = this.extractUserIdFromToken(token);
+      const request = await this.requestsRepository.findOne({
+        where: { id: requestId },
+      });
 
-    if (!request) {
-      throw new UnauthorizedException('Request not found');
+      if (!request) {
+        throw new UnauthorizedException('Request not found');
+      }
+
+      const allowedRoles = [EmployeeRole.Dispatcher, EmployeeRole.Performer];
+      await this.validateAccess(request, userId, allowedRoles);
+
+      request.status = newStatus;
+      await this.requestsRepository.save(request);
+    } catch (error) {
+      throw new DetailedInternalServerErrorException(
+        'Error changing request status',
+        error.message,
+      );
     }
-
-    const allowedRoles = [EmployeeRole.Dispatcher, EmployeeRole.Performer];
-    await this.validateAccess(request, userId, allowedRoles);
-
-    request.status = newStatus;
-    await this.requestsRepository.save(request);
   }
 
-  // Новый метод для получения списка заявок, назначенных текущему пользователю
   async getAssignedRequests(token: string): Promise<Requests[]> {
-    const userId = this.extractUserIdFromToken(token);
+    try {
+      const userId = this.extractUserIdFromToken(token);
 
-    // Находим все записи RequestData, где текущий пользователь назначен исполнителем
-    const assignedRequestData = await this.requestDataRepository.find({
-      where: { performer_id: { id: userId } },
-      relations: ['request'],
-    });
+      // Находим все записи RequestData, где текущий пользователь назначен исполнителем
+      const assignedRequestData = await this.requestDataRepository.find({
+        where: { performer_id: { id: userId } },
+        relations: ['request'],
+      });
 
-    // Возвращаем список заявок, назначенных текущему пользователю
-    return assignedRequestData.map((data) => data.request);
+      // Возвращаем список заявок, назначенных текущему пользователю
+      return assignedRequestData.map((data) => data.request);
+    } catch (error) {
+      throw new DetailedInternalServerErrorException(
+        'Error retrieving assigned requests',
+        error.message,
+      );
+    }
   }
 
-  //Список всех назначенных заявок
   async findAll(): Promise<any[]> {
-    const requestData = await this.requestDataRepository.find({
-      relations: ['request', 'executor_id', 'performer_id'],
-    });
+    try {
+      const requestData = await this.requestDataRepository.find({
+        relations: ['request', 'executor_id', 'performer_id'],
+      });
 
-    return requestData.map((data) => ({
-      ...data,
-      executor_id: this.transformEmployeeToDto(data.executor_id),
-      performer_id: this.transformEmployeeToDto(data.performer_id),
-    }));
+      return requestData.map((data) => ({
+        ...data,
+        executor_id: this.transformEmployeeToDto(data.executor_id),
+        performer_id: this.transformEmployeeToDto(data.performer_id),
+      }));
+    } catch (error) {
+      throw new DetailedInternalServerErrorException(
+        'Error retrieving all request data',
+        error.message,
+      );
+    }
   }
 }

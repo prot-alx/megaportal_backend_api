@@ -149,13 +149,20 @@ export class MaterialService {
   }
 
   async findOne(id: number): Promise<Material> {
-    const material = await this.materialRepository.findOne({
-      where: { id },
-      relations: ['category_id', 'type_id', 'subtype_id'],
-    });
-    if (!material) {
-      throw new NotFoundException(`Material with ID ${id} not found`);
+    try {
+      const material = await this.materialRepository.findOne({
+        where: { id },
+        relations: ['category_id', 'type_id', 'subtype_id'],
+      });
+      if (!material) {
+        throw new NotFoundException(`Material with ID ${id} not found`);
+      }
+      return material;
+    } catch (error) {
+      throw new DetailedInternalServerErrorException(
+        `Failed to retrieve material with ID ${id}`,
+        error.message,
+      );
     }
-    return material;
   }
 }

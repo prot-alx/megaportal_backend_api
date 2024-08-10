@@ -11,6 +11,7 @@ import { Not, Repository } from 'typeorm';
 import { Employee } from '../employee/employee.entity';
 import { CreateRequestDto } from './request.dto';
 import { UserResponseDto } from '../employee/employee.dto';
+import { DetailedInternalServerErrorException } from 'src/error/all-exceptions.filter';
 
 @Injectable()
 export class RequestsService {
@@ -23,11 +24,18 @@ export class RequestsService {
   ) {}
 
   extractUserIdFromToken(token: string): number {
-    const decodedToken = this.jwtService.decode(token);
-    if (!decodedToken?.id) {
-      throw new UnauthorizedException('Invalid or missing token');
+    try {
+      const decodedToken = this.jwtService.decode(token);
+      if (!decodedToken?.id) {
+        throw new UnauthorizedException('Invalid or missing token');
+      }
+      return decodedToken.id;
+    } catch (error) {
+      throw new DetailedInternalServerErrorException(
+        'Error decoding token',
+        error.message,
+      );
     }
-    return decodedToken.id;
   }
 
   private transformEmployeeToDto(employee: Employee): UserResponseDto {
@@ -41,88 +49,112 @@ export class RequestsService {
     createRequestDto: CreateRequestDto,
     token: string,
   ): Promise<Requests> {
-    // Получаем ID текущего пользователя из токена
-    const employeeId = this.extractUserIdFromToken(token);
+    try {
+      // Получаем ID текущего пользователя из токена
+      const employeeId = this.extractUserIdFromToken(token);
 
-    // Находим сотрудника по ID
-    const employee = await this.employeeRepository.findOne({
-      where: { id: employeeId },
-    });
+      // Находим сотрудника по ID
+      const employee = await this.employeeRepository.findOne({
+        where: { id: employeeId },
+      });
 
-    if (!employee) {
-      throw new NotFoundException('Employee not found');
-    }
+      if (!employee) {
+        throw new NotFoundException('Employee not found');
+      }
 
-    // Проверяем, есть ли активные заявки для этого клиента
-    const existingRequest = await this.requestsRepository.findOne({
-      where: {
-        client_id: createRequestDto.client_id,
-        status: Not(RequestStatus.CLOSED), // Проверяем статус, отличный от 'CLOSED'
-      },
-    });
+      // Проверяем, есть ли активные заявки для этого клиента
+      const existingRequest = await this.requestsRepository.findOne({
+        where: {
+          client_id: createRequestDto.client_id,
+          status: Not(RequestStatus.CLOSED), // Проверяем статус, отличный от 'CLOSED'
+        },
+      });
 
-    // Если заявка есть, возвращаем её статус (опционально можно будет добавить прямую ссылку на эту заявку)
-    if (existingRequest) {
-      throw new BadRequestException(
-        `An active request for this client already exists with status: ${existingRequest.status}. You cannot create a new request until the previous one is closed.`,
+      if (existingRequest) {
+        throw new BadRequestException(
+          `An active request for this client already exists with status: ${existingRequest.status}. You cannot create a new request until the previous one is closed.`,
+        );
+      }
+
+      // Преобразуем строку в дату
+      const requestDate = new Date(createRequestDto.request_date);
+      if (isNaN(requestDate.getTime())) {
+        throw new BadRequestException('Invalid request_date format');
+      }
+
+      // Создаем заявку
+      const request = this.requestsRepository.create({
+        ...createRequestDto,
+        hr_id: employee,
+        request_date: requestDate,
+        // status: createRequestDto.status || RequestStatus.NEW,
+      });
+
+      // Сохраняем заявку в базе данных
+      return await this.requestsRepository.save(request);
+    } catch (error) {
+      throw new DetailedInternalServerErrorException(
+        'Error creating request',
+        error.message,
       );
     }
-
-    // Преобразуем строку в дату
-    const requestDate = new Date(createRequestDto.request_date);
-    if (isNaN(requestDate.getTime())) {
-      throw new BadRequestException('Invalid request_date format');
-    }
-
-    // Создаем заявку
-    const request = this.requestsRepository.create({
-      ...createRequestDto,
-      hr_id: employee,
-      request_date: requestDate,
-      //status: createRequestDto.status || RequestStatus.NEW,
-    });
-
-    // Сохраняем заявку в базе данных
-    return this.requestsRepository.save(request);
   }
 
   async findById(id: number): Promise<Requests> {
-    const request = await this.requestsRepository.findOne({
-      where: { id },
-    });
+    try {
+      const request = await this.requestsRepository.findOne({
+        where: { id },
+      });
 
-    if (!request) {
-      throw new NotFoundException('Request not found');
+      if (!request) {
+        throw new NotFoundException('Request not found');
+      }
+
+      return request;
+    } catch (error) {
+      throw new DetailedInternalServerErrorException(
+        'Error retrieving request',
+        error.message,
+      );
     }
-
-    return request;
   }
 
   async getCurrentUser(token: string): Promise<UserResponseDto> {
-    const employeeId = this.extractUserIdFromToken(token);
+    try {
+      const employeeId = this.extractUserIdFromToken(token);
 
-    const employee = await this.employeeRepository.findOne({
-      where: { id: employeeId },
-    });
+      const employee = await this.employeeRepository.findOne({
+        where: { id: employeeId },
+      });
 
-    if (!employee) {
-      throw new NotFoundException('User not found');
+      if (!employee) {
+        throw new NotFoundException('User not found');
+      }
+
+      // Формируем ответ на основе DTO
+      return this.transformEmployeeToDto(employee);
+    } catch (error) {
+      throw new DetailedInternalServerErrorException(
+        'Error retrieving current user',
+        error.message,
+      );
     }
-
-    // Формируем ответ на основе DTO
-    return {
-      id: employee.id,
-      name: employee.name,
-    };
   }
 
   async findAll(): Promise<any[]> {
-    const requests = await this.requestsRepository.find({
-      relations: ['hr_id'],
-    });
-    return requests.map((request) => ({
-      ...request,
-      hr_id: this.transformEmployeeToDto(request.hr_id), // Преобразование `hr_id` в DTO
-    }));
+    try {
+      const requests = await this.requestsRepository.find({
+        relations: ['hr_id'],
+      });
+      return requests.map((request) => ({
+        ...request,
+        hr_id: this.transformEmployeeToDto(request.hr_id), // Преобразование `hr_id` в DTO
+      }));
+    } catch (error) {
+      throw new DetailedInternalServerErrorException(
+        'Error retrieving requests',
+        error.message,
+      );
+    }
   }
 }

@@ -15,6 +15,7 @@ import {
 } from './material-type.dto';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
+import { DetailedInternalServerErrorException } from 'src/error/all-exceptions.filter';
 
 @ApiTags('material-type')
 @Controller('material-type')
@@ -30,7 +31,14 @@ export class MaterialTypeController {
   async create(
     @Body() createMaterialTypeDto: CreateMaterialTypeDto,
   ): Promise<MaterialType> {
-    return this.materialTypeService.create(createMaterialTypeDto);
+    try {
+      return await this.materialTypeService.create(createMaterialTypeDto);
+    } catch (error) {
+      throw new DetailedInternalServerErrorException(
+        'Error creating material type',
+        error.message,
+      );
+    }
   }
 
   @Put(':id')
@@ -42,7 +50,14 @@ export class MaterialTypeController {
     @Param('id') id: number,
     @Body() updateMaterialTypeDto: UpdateMaterialTypeDto,
   ): Promise<MaterialType> {
-    return this.materialTypeService.update(id, updateMaterialTypeDto);
+    try {
+      return await this.materialTypeService.update(id, updateMaterialTypeDto);
+    } catch (error) {
+      throw new DetailedInternalServerErrorException(
+        'Error updating material type',
+        error.message,
+      );
+    }
   }
 
   @Get()
@@ -50,7 +65,14 @@ export class MaterialTypeController {
     summary: 'Get all types // Для получения всех типов материалов.',
   })
   async findAll(): Promise<MaterialType[]> {
-    return this.materialTypeService.findAll();
+    try {
+      return await this.materialTypeService.findAll();
+    } catch (error) {
+      throw new DetailedInternalServerErrorException(
+        'Error retrieving material types',
+        error.message,
+      );
+    }
   }
 
   @Get(':id')
@@ -58,6 +80,13 @@ export class MaterialTypeController {
     summary: 'Get type by id // Для получения конкретного материала по id.',
   })
   async findOne(@Param('id') id: number): Promise<MaterialType> {
-    return this.materialTypeService.findOne(id);
+    try {
+      return await this.materialTypeService.findOne(id);
+    } catch (error) {
+      throw new DetailedInternalServerErrorException(
+        'Error retrieving material type',
+        error.message,
+      );
+    }
   }
 }

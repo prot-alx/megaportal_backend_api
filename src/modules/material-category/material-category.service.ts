@@ -6,6 +6,7 @@ import {
   UpdateMaterialCategoryDto,
 } from './material-category.dto';
 import { MaterialCategory } from './material-category.entity';
+import { DetailedInternalServerErrorException } from 'src/error/all-exceptions.filter';
 
 @Injectable()
 export class MaterialCategoryService {
@@ -17,38 +18,66 @@ export class MaterialCategoryService {
   async create(
     createMaterialCategoryDto: CreateMaterialCategoryDto,
   ): Promise<MaterialCategory> {
-    const materialCategory = this.materialCategoryRepository.create(
-      createMaterialCategoryDto,
-    );
-    return this.materialCategoryRepository.save(materialCategory);
+    try {
+      const materialCategory = this.materialCategoryRepository.create(
+        createMaterialCategoryDto,
+      );
+      return this.materialCategoryRepository.save(materialCategory);
+    } catch (error) {
+      throw new DetailedInternalServerErrorException(
+        'Error creating material category',
+        error.message,
+      );
+    }
   }
 
   async update(
     id: number,
     updateMaterialCategoryDto: UpdateMaterialCategoryDto,
   ): Promise<MaterialCategory> {
-    const materialCategory = await this.materialCategoryRepository.findOne({
-      where: { id },
-    });
-    if (!materialCategory) {
-      throw new NotFoundException(`MaterialCategory with ID ${id} not found`);
-    }
+    try {
+      const materialCategory = await this.materialCategoryRepository.findOne({
+        where: { id },
+      });
+      if (!materialCategory) {
+        throw new NotFoundException(`MaterialCategory with ID ${id} not found`);
+      }
 
-    Object.assign(materialCategory, updateMaterialCategoryDto);
-    return this.materialCategoryRepository.save(materialCategory);
+      Object.assign(materialCategory, updateMaterialCategoryDto);
+      return this.materialCategoryRepository.save(materialCategory);
+    } catch (error) {
+      throw new DetailedInternalServerErrorException(
+        'Error updating material category',
+        error.message,
+      );
+    }
   }
 
   async findAll(): Promise<MaterialCategory[]> {
-    return this.materialCategoryRepository.find();
+    try {
+      return await this.materialCategoryRepository.find();
+    } catch (error) {
+      throw new DetailedInternalServerErrorException(
+        'Error finding material categories',
+        error.message,
+      );
+    }
   }
 
   async findOne(id: number): Promise<MaterialCategory> {
-    const materialCategory = await this.materialCategoryRepository.findOne({
-      where: { id },
-    });
-    if (!materialCategory) {
-      throw new NotFoundException(`MaterialCategory with ID ${id} not found`);
+    try {
+      const materialCategory = await this.materialCategoryRepository.findOne({
+        where: { id },
+      });
+      if (!materialCategory) {
+        throw new NotFoundException(`MaterialCategory with ID ${id} not found`);
+      }
+      return materialCategory;
+    } catch (error) {
+      throw new DetailedInternalServerErrorException(
+        `Error finding material category with ID ${id}`,
+        error.message,
+      );
     }
-    return materialCategory;
   }
 }

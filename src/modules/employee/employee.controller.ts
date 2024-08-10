@@ -6,11 +6,13 @@ import {
   Body,
   Param,
   UseGuards,
+  NotFoundException,
 } from '@nestjs/common';
 import { EmployeeService } from './employee.service';
 import { Employee } from './employee.entity';
 import { CreateEmployeeDto, UpdateEmployeeDto } from './employee.dto';
 import { AuthGuard } from '@nestjs/passport';
+import { DetailedInternalServerErrorException } from 'src/error/all-exceptions.filter';
 
 @Controller('employee')
 @UseGuards(AuthGuard('jwt'))
@@ -19,14 +21,28 @@ export class EmployeeController {
 
   @Get()
   async findAll(): Promise<Employee[]> {
-    return this.employeeService.findAll();
+    try {
+      return await this.employeeService.findAll();
+    } catch (error) {
+      throw new DetailedInternalServerErrorException(
+        'Error retrieving employees',
+        error.message,
+      );
+    }
   }
 
   @Post()
   async create(
     @Body() createEmployeeDto: CreateEmployeeDto,
   ): Promise<Employee> {
-    return this.employeeService.create(createEmployeeDto);
+    try {
+      return await this.employeeService.create(createEmployeeDto);
+    } catch (error) {
+      throw new DetailedInternalServerErrorException(
+        'Error creating employee',
+        error.message,
+      );
+    }
   }
 
   @Put(':id')
@@ -34,11 +50,28 @@ export class EmployeeController {
     @Param('id') id: number,
     @Body() updateEmployeeDto: UpdateEmployeeDto,
   ): Promise<Employee> {
-    return this.employeeService.update(id, updateEmployeeDto);
+    try {
+      return await this.employeeService.update(id, updateEmployeeDto);
+    } catch (error) {
+      throw new DetailedInternalServerErrorException(
+        'Error updating employee',
+        error.message,
+      );
+    }
   }
 
   @Get(':id')
   async findOne(@Param('id') id: number): Promise<Employee> {
-    return this.employeeService.findOne(id);
+    try {
+      return await this.employeeService.findOne(id);
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      throw new DetailedInternalServerErrorException(
+        'Error retrieving employee',
+        error.message,
+      );
+    }
   }
 }

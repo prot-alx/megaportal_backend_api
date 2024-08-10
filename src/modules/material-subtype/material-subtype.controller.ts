@@ -15,6 +15,7 @@ import {
 } from './material-subtype.dto';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
+import { DetailedInternalServerErrorException } from 'src/error/all-exceptions.filter';
 
 @ApiTags('material-subtype')
 @Controller('material-subtype')
@@ -32,7 +33,14 @@ export class MaterialSubtypeController {
   async create(
     @Body() createMaterialSubtypeDto: CreateMaterialSubtypeDto,
   ): Promise<MaterialSubtype> {
-    return this.materialSubtypeService.create(createMaterialSubtypeDto);
+    try {
+      return await this.materialSubtypeService.create(createMaterialSubtypeDto);
+    } catch (error) {
+      throw new DetailedInternalServerErrorException(
+        'Failed to create material subtype',
+        error.message,
+      );
+    }
   }
 
   @Put(':id')
@@ -44,18 +52,42 @@ export class MaterialSubtypeController {
     @Param('id') id: number,
     @Body() updateMaterialSubtypeDto: UpdateMaterialSubtypeDto,
   ): Promise<MaterialSubtype> {
-    return this.materialSubtypeService.update(id, updateMaterialSubtypeDto);
+    try {
+      return await this.materialSubtypeService.update(
+        id,
+        updateMaterialSubtypeDto,
+      );
+    } catch (error) {
+      throw new DetailedInternalServerErrorException(
+        `Failed to update material subtype with ID ${id}`,
+        error.message,
+      );
+    }
   }
 
   @Get()
   @ApiOperation({ summary: 'Get all subtypes // Получить все подтипы' })
   async findAll(): Promise<MaterialSubtype[]> {
-    return this.materialSubtypeService.findAll();
+    try {
+      return await this.materialSubtypeService.findAll();
+    } catch (error) {
+      throw new DetailedInternalServerErrorException(
+        'Failed to retrieve material subtypes',
+        error.message,
+      );
+    }
   }
 
   @Get(':id')
   @ApiOperation({ summary: 'Get subtype by id // Получить подтип по id' })
   async findOne(@Param('id') id: number): Promise<MaterialSubtype> {
-    return this.materialSubtypeService.findOne(id);
+    try {
+      return await this.materialSubtypeService.findOne(id);
+    } catch (error) {
+      throw new DetailedInternalServerErrorException(
+        `Failed to retrieve material subtype with ID ${id}`,
+        error.message,
+      );
+    }
   }
 }

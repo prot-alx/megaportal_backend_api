@@ -12,6 +12,7 @@ import { RequestsService } from './requests.service';
 import { CreateRequestDto } from './request.dto';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { DetailedInternalServerErrorException } from 'src/error/all-exceptions.filter';
 
 @ApiTags('Request')
 @Controller('requests')
@@ -29,11 +30,18 @@ export class RequestsController {
     @Body() createRequestDto: CreateRequestDto,
     @Req() req: Request,
   ) {
-    const token = req.headers['authorization']?.split(' ')[1];
-    if (!token) {
-      throw new UnauthorizedException('Token is missing');
+    try {
+      const token = req.headers['authorization']?.split(' ')[1];
+      if (!token) {
+        throw new UnauthorizedException('Token is missing');
+      }
+      return await this.requestsService.create(createRequestDto, token);
+    } catch (error) {
+      throw new DetailedInternalServerErrorException(
+        'Error creating request',
+        error.message,
+      );
     }
-    return this.requestsService.create(createRequestDto, token);
   }
 
   @Get('me')
@@ -42,8 +50,18 @@ export class RequestsController {
       'Тестовый эндпоинт для проверки получения токена пользователя. Удалить перед релизом',
   })
   async getCurrentUser(@Req() req: Request) {
-    const token = req.headers['authorization'].split(' ')[1];
-    return this.requestsService.getCurrentUser(token);
+    try {
+      const token = req.headers['authorization']?.split(' ')[1];
+      if (!token) {
+        throw new UnauthorizedException('Token is missing');
+      }
+      return await this.requestsService.getCurrentUser(token);
+    } catch (error) {
+      throw new DetailedInternalServerErrorException(
+        'Error retrieving current user',
+        error.message,
+      );
+    }
   }
 
   @Get()
@@ -52,6 +70,13 @@ export class RequestsController {
       'Show all requests // Отобразить все заявки. Без фильтров статусов, дат, типов, и прочих других. Вообще все заявки. Добавить фильтры потом',
   })
   async findAll() {
-    return this.requestsService.findAll();
+    try {
+      return await this.requestsService.findAll();
+    } catch (error) {
+      throw new DetailedInternalServerErrorException(
+        'Error retrieving requests',
+        error.message,
+      );
+    }
   }
 }

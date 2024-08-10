@@ -17,6 +17,7 @@ import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
 import { Roles } from 'src/common/decorators/roles.decorator';
 import { EmployeeRole } from '../employee/employee.entity';
+import { DetailedInternalServerErrorException } from 'src/error/all-exceptions.filter';
 
 @ApiTags('material-category')
 @Controller('material-category')
@@ -34,7 +35,14 @@ export class MaterialCategoryController {
   async create(
     @Body() createMaterialCategoryDto: CreateMaterialCategoryDto,
   ): Promise<MaterialCategory> {
-    return this.materialCategoryService.create(createMaterialCategoryDto);
+    try {
+      return await this.materialCategoryService.create(createMaterialCategoryDto);
+    } catch (error) {
+      throw new DetailedInternalServerErrorException(
+        'Failed to create material category',
+        error.message,
+      );
+    }
   }
 
   @Put(':id')
@@ -46,14 +54,28 @@ export class MaterialCategoryController {
     @Param('id') id: number,
     @Body() updateMaterialCategoryDto: UpdateMaterialCategoryDto,
   ): Promise<MaterialCategory> {
-    return this.materialCategoryService.update(id, updateMaterialCategoryDto);
+    try {
+      return await this.materialCategoryService.update(id, updateMaterialCategoryDto);
+    } catch (error) {
+      throw new DetailedInternalServerErrorException(
+        `Failed to update material category with ID ${id}`,
+        error.message,
+      );
+    }
   }
 
   @Get()
   @Roles(EmployeeRole.Performer)
   @ApiOperation({ summary: 'Get all categories // Получить все категории' })
   async findAll(): Promise<MaterialCategory[]> {
-    return this.materialCategoryService.findAll();
+    try {
+      return await this.materialCategoryService.findAll();
+    } catch (error) {
+      throw new DetailedInternalServerErrorException(
+        'Failed to get material categories',
+        error.message,
+      );
+    }
   }
 
   @Get(':id')
@@ -62,6 +84,13 @@ export class MaterialCategoryController {
       'Get one category by ID // Получить одну конкретную категорию по ID',
   })
   async findOne(@Param('id') id: number): Promise<MaterialCategory> {
-    return this.materialCategoryService.findOne(id);
+    try {
+      return await this.materialCategoryService.findOne(id);
+    } catch (error) {
+      throw new DetailedInternalServerErrorException(
+        `Failed to get material category with ID ${id}`,
+        error.message,
+      );
+    }
   }
 }
