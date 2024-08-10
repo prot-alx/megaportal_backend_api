@@ -6,73 +6,81 @@ import {
   IsNotEmpty,
 } from 'class-validator';
 import { RequestType, RequestStatus } from './requests.entity';
+import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateRequestDto {
+  @ApiProperty()
   @IsOptional()
   @IsString()
   ep_id?: string;
 
+  @ApiProperty()
   @IsString()
   client_id: string;
 
+  @ApiProperty()
   @IsNotEmpty()
   @IsString()
   description: string;
 
+  @ApiProperty()
   @IsNotEmpty()
   @IsString()
   address: string;
 
+  @ApiProperty()
   @IsNotEmpty()
   @IsString()
   request_date: string;
 
-  @IsNotEmpty()
+  @ApiProperty()
+  @IsOptional()
   @IsEnum(RequestType)
   type: RequestType;
-
-  @IsOptional()
-  @IsString()
-  comment?: string;
-
-  @IsOptional()
-  @IsEnum(RequestStatus)
-  status?: RequestStatus = RequestStatus.NEW;
 }
 
 export class UpdateRequestDto {
+  @ApiProperty()
   @IsOptional()
   @IsString()
   ep_id?: string;
 
+  @ApiProperty()
   @IsOptional()
   @IsString()
   client_id?: string;
 
+  @ApiProperty()
   @IsOptional()
   @IsString()
   description?: string;
 
+  @ApiProperty()
   @IsOptional()
   @IsString()
   address?: string;
 
+  @ApiProperty()
   @IsNotEmpty()
   @IsString()
   request_date?: string;
 
+  @ApiProperty()
   @IsOptional()
   @IsEnum(RequestType)
   type?: RequestType;
 
+  @ApiProperty()
   @IsOptional()
   @IsString()
   comment?: string;
 
+  @ApiProperty()
   @IsOptional()
   @IsEnum(RequestStatus)
   status?: RequestStatus;
 
+  @ApiProperty()
   @IsOptional()
   @IsInt()
   hr_id?: number;

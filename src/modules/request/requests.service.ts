@@ -7,7 +7,7 @@ import {
 import { Requests, RequestStatus } from './requests.entity';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Not, Repository } from 'typeorm';
 import { Employee } from '../employee/employee.entity';
 import { CreateRequestDto } from './request.dto';
 import { UserResponseDto } from '../employee/employee.dto';
@@ -19,7 +19,7 @@ export class RequestsService {
     private readonly requestsRepository: Repository<Requests>,
     @InjectRepository(Employee)
     private readonly employeeRepository: Repository<Employee>,
-    private readonly jwtService: JwtService, // Make sure JwtService is injected
+    private readonly jwtService: JwtService,
   ) {}
 
   extractUserIdFromToken(token: string): number {
@@ -53,6 +53,21 @@ export class RequestsService {
       throw new NotFoundException('Employee not found');
     }
 
+    // Проверяем, есть ли активные заявки для этого клиента
+    const existingRequest = await this.requestsRepository.findOne({
+      where: {
+        client_id: createRequestDto.client_id,
+        status: Not(RequestStatus.CLOSED), // Проверяем статус, отличный от 'CLOSED'
+      },
+    });
+
+    // Если заявка есть, возвращаем её статус (опционально можно будет добавить прямую ссылку на эту заявку)
+    if (existingRequest) {
+      throw new BadRequestException(
+        `An active request for this client already exists with status: ${existingRequest.status}. You cannot create a new request until the previous one is closed.`,
+      );
+    }
+
     // Преобразуем строку в дату
     const requestDate = new Date(createRequestDto.request_date);
     if (isNaN(requestDate.getTime())) {
@@ -64,7 +79,7 @@ export class RequestsService {
       ...createRequestDto,
       hr_id: employee,
       request_date: requestDate,
-      status: createRequestDto.status || RequestStatus.NEW,
+      //status: createRequestDto.status || RequestStatus.NEW,
     });
 
     // Сохраняем заявку в базе данных

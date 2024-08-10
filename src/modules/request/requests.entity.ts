@@ -48,16 +48,16 @@ export class Requests {
   @Column({ nullable: false })
   address: string;
 
-  @Column({ type: 'date', nullable: false }) // Тип 'date' для хранения даты
+  @Column({ type: 'date', nullable: false })
   request_date: Date;
 
-  @Column({ type: 'enum', enum: RequestType, nullable: false })
+  @Column({ type: 'enum', enum: RequestType, nullable: false, default: RequestType.Default })
   type: RequestType;
 
   @Column({ nullable: true })
   comment: string;
 
-  @Column({ type: 'enum', enum: RequestStatus, nullable: false })
+  @Column({ type: 'enum', enum: RequestStatus, nullable: false, default: RequestStatus.NEW })
   status: RequestStatus;
 
   @CreateDateColumn()
