@@ -11,10 +11,11 @@ import {
 import { RequestsService } from './requests.service';
 import { CreateRequestDto } from './request.dto';
 import { AuthGuard } from '@nestjs/passport';
-import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { DetailedInternalServerErrorException } from 'src/error/all-exceptions.filter';
 
 @ApiTags('Request')
+@ApiBearerAuth()
 @Controller('requests')
 @UseGuards(AuthGuard('jwt'))
 export class RequestsController {

@@ -13,9 +13,10 @@ import { Employee } from './employee.entity';
 import { CreateEmployeeDto, UpdateEmployeeDto } from './employee.dto';
 import { AuthGuard } from '@nestjs/passport';
 import { DetailedInternalServerErrorException } from 'src/error/all-exceptions.filter';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 
 @ApiTags('Employees')
+@ApiBearerAuth()
 @Controller('employee')
 @UseGuards(AuthGuard('jwt'))
 export class EmployeeController {

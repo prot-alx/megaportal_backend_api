@@ -13,11 +13,12 @@ import {
   CreateMaterialSubtypeDto,
   UpdateMaterialSubtypeDto,
 } from './material-subtype.dto';
-import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
 import { DetailedInternalServerErrorException } from 'src/error/all-exceptions.filter';
 
 @ApiTags('Material Subtype')
+@ApiBearerAuth()
 @Controller('material-subtype')
 @UseGuards(AuthGuard('jwt'))
 export class MaterialSubtypeController {

@@ -7,7 +7,13 @@ import {
   Body,
   UseGuards,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBody,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import { MaterialService } from './material.service';
 import { CreateMaterialDto, UpdateMaterialDto } from './material.dto';
 import { Material } from './material.entity';
@@ -15,6 +21,7 @@ import { DetailedInternalServerErrorException } from 'src/error/all-exceptions.f
 import { AuthGuard } from '@nestjs/passport';
 
 @ApiTags('Material')
+@ApiBearerAuth()
 @Controller('material')
 @UseGuards(AuthGuard('jwt'))
 export class MaterialController {

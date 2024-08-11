@@ -18,9 +18,10 @@ import { ChangeRequestStatusDto, RequestDataDto } from './request-data.dto';
 import { Requests } from '../request/requests.entity';
 import { DetailedInternalServerErrorException } from 'src/error/all-exceptions.filter';
 import { AddCommentDto } from '../request/request.dto';
-import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 
 @ApiTags('Request-Data')
+@ApiBearerAuth()
 @Controller('request-data')
 @UseGuards(AuthGuard('jwt'))
 export class RequestDataController {

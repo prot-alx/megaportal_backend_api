@@ -13,13 +13,14 @@ import {
   CreateMaterialCategoryDto,
   UpdateMaterialCategoryDto,
 } from './material-category.dto';
-import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
 import { Roles } from 'src/common/decorators/roles.decorator';
 import { EmployeeRole } from '../employee/employee.entity';
 import { DetailedInternalServerErrorException } from 'src/error/all-exceptions.filter';
 
 @ApiTags('Material Category')
+@ApiBearerAuth()
 @Controller('material-category')
 @UseGuards(AuthGuard('jwt'))
 export class MaterialCategoryController {
@@ -36,7 +37,9 @@ export class MaterialCategoryController {
     @Body() createMaterialCategoryDto: CreateMaterialCategoryDto,
   ): Promise<MaterialCategory> {
     try {
-      return await this.materialCategoryService.create(createMaterialCategoryDto);
+      return await this.materialCategoryService.create(
+        createMaterialCategoryDto,
+      );
     } catch (error) {
       throw new DetailedInternalServerErrorException(
         'Failed to create material category',
@@ -55,7 +58,10 @@ export class MaterialCategoryController {
     @Body() updateMaterialCategoryDto: UpdateMaterialCategoryDto,
   ): Promise<MaterialCategory> {
     try {
-      return await this.materialCategoryService.update(id, updateMaterialCategoryDto);
+      return await this.materialCategoryService.update(
+        id,
+        updateMaterialCategoryDto,
+      );
     } catch (error) {
       throw new DetailedInternalServerErrorException(
         `Failed to update material category with ID ${id}`,

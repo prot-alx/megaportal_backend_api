@@ -16,9 +16,10 @@ import {
 } from './backpack-employee.dto';
 import { BackpackEmployee } from './backpack-employee.entity';
 import { AuthGuard } from '@nestjs/passport';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 
 @ApiTags('Backpack')
+@ApiBearerAuth()
 @Controller('backpack-employee')
 @UseGuards(AuthGuard('jwt'))
 export class BackpackEmployeeController {
