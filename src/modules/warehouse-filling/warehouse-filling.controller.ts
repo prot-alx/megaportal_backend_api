@@ -14,7 +14,9 @@ import {
   UpdateWarehouseFillingDto,
 } from './warehouse-filling.dto';
 import { AuthGuard } from '@nestjs/passport';
+import { ApiTags } from '@nestjs/swagger';
 
+@ApiTags('Warehouse Stock')
 @Controller('warehouse-filling')
 @UseGuards(AuthGuard('jwt'))
 export class WarehouseFillingController {

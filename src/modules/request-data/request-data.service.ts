@@ -24,6 +24,7 @@ export class RequestDataService {
     private jwtService: JwtService,
   ) {}
 
+  // Проверка доступа к заявке
   private async validateAccess(
     request: Requests,
     userId: number,
@@ -40,9 +41,9 @@ export class RequestDataService {
         );
       }
 
-      if (request.status === RequestStatus.CLOSED) {
+      if ([RequestStatus.CLOSED, RequestStatus.CANCELLED].includes(request.status)) {
         throw new ForbiddenException(
-          'Request is closed and cannot be modified',
+          'Request is closed or cancelled and cannot be modified',
         );
       }
 
@@ -64,6 +65,7 @@ export class RequestDataService {
     }
   }
 
+  // Извлечение ID пользователя из токена
   private extractUserIdFromToken(token: string): number {
     try {
       const decodedToken = this.jwtService.decode(token);
@@ -79,6 +81,7 @@ export class RequestDataService {
     }
   }
 
+  // Преобразование сотрудника в DTO
   private transformEmployeeToDto(employee: Employee): UserResponseDto {
     return {
       id: employee.id,
@@ -86,6 +89,7 @@ export class RequestDataService {
     };
   }
 
+  // Назначение заявки исполнителю
   async assignRequest(
     requestId: number,
     performerId: number,
@@ -144,6 +148,7 @@ export class RequestDataService {
     }
   }
 
+  // Удаление исполнителя из заявки
   async removePerformer(requestId: number, performerId: number): Promise<void> {
     try {
       const request = await this.requestsRepository.findOne({
@@ -182,12 +187,20 @@ export class RequestDataService {
     }
   }
 
+  // Изменение статуса заявки
   async changeRequestStatus(
     requestId: number,
     newStatus: RequestStatus,
     token: string,
   ): Promise<void> {
     try {
+      // Запрещаем изменение статуса на CLOSED или CANCELLED через этот метод
+      if ([RequestStatus.CLOSED, RequestStatus.CANCELLED].includes(newStatus)) {
+        throw new ForbiddenException(
+          'Changing the status to CLOSED or CANCELLED is not allowed through this method',
+        );
+      }
+
       const userId = this.extractUserIdFromToken(token);
       const request = await this.requestsRepository.findOne({
         where: { id: requestId },
@@ -210,6 +223,7 @@ export class RequestDataService {
     }
   }
 
+  // Получить записи назначенных заявок на конкретного пользователя
   async getAssignedRequests(token: string): Promise<Requests[]> {
     try {
       const userId = this.extractUserIdFromToken(token);
@@ -230,6 +244,119 @@ export class RequestDataService {
     }
   }
 
+  // Метод для перевода заявки в статус CANCELLED
+  async cancelRequest(requestId: number, token: string): Promise<void> {
+    try {
+      const userId = this.extractUserIdFromToken(token);
+      const request = await this.requestsRepository.findOne({
+        where: { id: requestId },
+      });
+
+      if (!request) {
+        throw new UnauthorizedException('Request not found');
+      }
+
+      const allowedRoles = [EmployeeRole.Dispatcher, EmployeeRole.Performer];
+      await this.validateAccess(request, userId, allowedRoles);
+
+      if (request.status === RequestStatus.CLOSED || request.status === RequestStatus.CANCELLED) {
+        throw new ForbiddenException('Request is already closed or cancelled');
+      }
+
+      request.status = RequestStatus.CANCELLED;
+      request.comment = `Заявка отменена сотрудником ${await this.getEmployeeName(userId)}`;
+      await this.requestsRepository.save(request);
+    } catch (error) {
+      throw new DetailedInternalServerErrorException(
+        'Error cancelling request',
+        error.message,
+      );
+    }
+  }
+
+  // Получение имени сотрудника
+  private async getEmployeeName(employeeId: number): Promise<string> {
+    const employee = await this.employeeRepository.findOne({
+      where: { id: employeeId },
+    });
+    if (!employee) {
+      throw new UnauthorizedException('Employee not found');
+    }
+    return employee.name;
+  }
+
+  // Добавление комментария к заявке
+  async addComment(
+    requestId: number,
+    comment: string,
+    token: string,
+  ): Promise<void> {
+    try {
+      const userId = this.extractUserIdFromToken(token);
+      const request = await this.requestsRepository.findOne({
+        where: { id: requestId },
+      });
+
+      if (!request) {
+        throw new UnauthorizedException('Request not found');
+      }
+
+      const allowedRoles = [EmployeeRole.Dispatcher, EmployeeRole.Performer];
+      await this.validateAccess(request, userId, allowedRoles);
+
+      const employee = await this.employeeRepository.findOne({
+        where: { id: userId },
+      });
+
+      const updatedComment = `${employee.name}: ${comment}`;
+
+      if (request.comment) {
+        request.comment += `\n${updatedComment}`;
+      } else {
+        request.comment = updatedComment;
+      }
+
+      await this.requestsRepository.save(request);
+    } catch (error) {
+      throw new DetailedInternalServerErrorException(
+        'Error adding comment to request',
+        error.message,
+      );
+    }
+  }
+
+  // Закрытие заявки
+  async closeRequest(requestId: number, token: string): Promise<void> {
+    try {
+      const userId = this.extractUserIdFromToken(token);
+      const request = await this.requestsRepository.findOne({
+        where: { id: requestId },
+      });
+
+      if (!request) {
+        throw new UnauthorizedException('Request not found');
+      }
+
+      const allowedRoles = [EmployeeRole.Dispatcher, EmployeeRole.Performer];
+      await this.validateAccess(request, userId, allowedRoles);
+
+      if (!request.comment) {
+        throw new ForbiddenException(
+          'Comment is required to close the request',
+        );
+      }
+
+      request.status = RequestStatus.CLOSED;
+      await this.requestsRepository.save(request);
+    } catch (error) {
+      throw new DetailedInternalServerErrorException(
+        'Error closing request',
+        error.message,
+      );
+    }
+  }
+
+  // Все назначенные заявки (без фильтрации)
   async findAll(): Promise<any[]> {
     try {
       const requestData = await this.requestDataRepository.find({

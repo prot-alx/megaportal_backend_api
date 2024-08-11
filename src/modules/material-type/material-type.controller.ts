@@ -17,7 +17,7 @@ import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
 import { DetailedInternalServerErrorException } from 'src/error/all-exceptions.filter';
 
-@ApiTags('material-type')
+@ApiTags('Material Type')
 @Controller('material-type')
 @UseGuards(AuthGuard('jwt'))
 export class MaterialTypeController {

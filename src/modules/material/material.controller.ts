@@ -14,7 +14,7 @@ import { Material } from './material.entity';
 import { DetailedInternalServerErrorException } from 'src/error/all-exceptions.filter';
 import { AuthGuard } from '@nestjs/passport';
 
-@ApiTags('material')
+@ApiTags('Material')
 @Controller('material')
 @UseGuards(AuthGuard('jwt'))
 export class MaterialController {

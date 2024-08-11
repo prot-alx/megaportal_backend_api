@@ -14,7 +14,9 @@ import {
   UpdateMaterialConsumptionDto,
 } from './material-consumption.dto';
 import { AuthGuard } from '@nestjs/passport';
+import { ApiTags } from '@nestjs/swagger';
 
+@ApiTags('Material Consumption')
 @Controller('material-consumption')
 @UseGuards(AuthGuard('jwt'))
 export class MaterialConsumptionController {

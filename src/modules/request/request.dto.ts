@@ -85,3 +85,9 @@ export class UpdateRequestDto {
   @IsInt()
   hr_id?: number;
 }
+
+export class AddCommentDto {
+  @ApiProperty()
+  @IsString()
+  comment: string;
+}

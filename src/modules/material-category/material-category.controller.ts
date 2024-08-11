@@ -19,7 +19,7 @@ import { Roles } from 'src/common/decorators/roles.decorator';
 import { EmployeeRole } from '../employee/employee.entity';
 import { DetailedInternalServerErrorException } from 'src/error/all-exceptions.filter';
 
-@ApiTags('material-category')
+@ApiTags('Material Category')
 @Controller('material-category')
 @UseGuards(AuthGuard('jwt'))
 export class MaterialCategoryController {
