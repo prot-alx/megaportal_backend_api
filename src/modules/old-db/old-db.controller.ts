@@ -1,14 +1,16 @@
 import { Controller, Get, Query } from '@nestjs/common';
 import { OldBazaDto } from './old-db.dto';
 import { OldDbService } from './old-db.service';
-import { ApiQuery, ApiResponse } from '@nestjs/swagger';
+import { ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 
+@ApiTags('OldDataBase')
 @Controller('old')
 export class OldDbController {
   constructor(private readonly oldBazaService: OldDbService) {}
 
   // Эндпоинт для поиска записей по полю tel из старой базы
   @Get('find')
+  @ApiOperation({ summary: 'Найти старые заявки по номеру телефона' })
   @ApiQuery({
     name: 'tel',
     type: Number,
