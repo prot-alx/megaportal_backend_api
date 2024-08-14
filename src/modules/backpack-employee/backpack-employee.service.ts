@@ -1,89 +1,195 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  UnauthorizedException,
+  NotFoundException,
+} from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { BackpackEmployee } from './backpack-employee.entity';
-import {
-  CreateBackpackEmployeeDto,
-  UpdateBackpackEmployeeDto,
-} from './backpack-employee.dto';
 import { AuditLogService } from '../audit-log/audit-log.service';
+import { Employee } from '../employee/employee.entity';
+import { WarehouseFilling } from '../warehouse-filling/warehouse-filling.entity';
+import { BackpackEmployee } from './backpack-employee.entity';
+import { DetailedInternalServerErrorException } from 'src/error/all-exceptions.filter';
+import { BackpackEmployeeDto, MyBackpackDto } from './backpack-employee.dto';
 
 @Injectable()
 export class BackpackEmployeeService {
   constructor(
     @InjectRepository(BackpackEmployee)
     private readonly backpackEmployeeRepository: Repository<BackpackEmployee>,
+    @InjectRepository(WarehouseFilling)
+    private readonly warehouseFillingRepository: Repository<WarehouseFilling>,
+    @InjectRepository(Employee)
+    private readonly employeeRepository: Repository<Employee>,
     private readonly auditLogService: AuditLogService,
+    private readonly jwtService: JwtService,
   ) {}
 
-  async create(
-    createBackpackEmployeeDto: CreateBackpackEmployeeDto,
-    employeeId: number,
-  ): Promise<BackpackEmployee> {
-    const backpackEmployee = this.backpackEmployeeRepository.create(
-      createBackpackEmployeeDto,
-    );
-    await this.backpackEmployeeRepository.save(backpackEmployee);
-
-    // Логирование действия
-    await this.auditLogService.logAction({
-      employee_id: employeeId,
-      action: 'Create',
-      table_name: 'backpack_employee',
-      record_id: backpackEmployee.id,
-      details: createBackpackEmployeeDto,
-    });
-
-    return backpackEmployee;
+  private extractUserIdFromToken(token: string): number {
+    try {
+      const decodedToken = this.jwtService.decode(token);
+      if (!decodedToken?.id) {
+        throw new UnauthorizedException('Invalid or missing token');
+      }
+      return decodedToken.id;
+    } catch (error) {
+      throw new DetailedInternalServerErrorException(
+        'Error extracting user ID from token',
+        error.message,
+      );
+    }
   }
 
-  async update(
-    id: number,
-    updateBackpackEmployeeDto: UpdateBackpackEmployeeDto,
-    employeeId: number,
-  ): Promise<BackpackEmployee> {
-    const backpackEmployee = await this.backpackEmployeeRepository.findOneBy({
-      id,
+  private async getEmployeeName(employeeId: number): Promise<string> {
+    const employee = await this.employeeRepository.findOne({
+      where: { id: employeeId },
     });
-    if (!backpackEmployee) {
-      throw new NotFoundException(`BackpackEmployee with ID ${id} not found`);
+    if (!employee) {
+      throw new UnauthorizedException('Employee not found');
+    }
+    return employee.name;
+  }
+
+  // Выдаем материал специалисту
+  async transferMaterial(
+    warehouseFillingId: number,
+    employeeId: number,
+    count: number,
+    token: string,
+  ): Promise<BackpackEmployee> {
+    const warehouseFilling = await this.warehouseFillingRepository.findOne({
+      where: { id: warehouseFillingId },
+    });
+
+    if (!warehouseFilling || warehouseFilling.count < count) {
+      throw new NotFoundException('Недостаточно материала на складе');
     }
 
-    this.backpackEmployeeRepository.merge(
-      backpackEmployee,
-      updateBackpackEmployeeDto,
-    );
+    let backpackEmployee = await this.backpackEmployeeRepository.findOne({
+      where: {
+        employee_id: { id: employeeId },
+        warehouse_filling_id: { id: warehouseFillingId },
+      },
+    });
+
+    if (backpackEmployee) {
+      backpackEmployee.count += count;
+    } else {
+      backpackEmployee = this.backpackEmployeeRepository.create({
+        employee_id: { id: employeeId },
+        warehouse_filling_id: warehouseFilling,
+        count,
+      });
+    }
+
+    warehouseFilling.count -= count;
+    await this.warehouseFillingRepository.save(warehouseFilling);
     await this.backpackEmployeeRepository.save(backpackEmployee);
 
-    // Логирование действия
+    const storekeeperId = this.extractUserIdFromToken(token);
+    const storekeeperName = await this.getEmployeeName(storekeeperId);
+    const ownerName = await this.getEmployeeName(employeeId);
+
     await this.auditLogService.logAction({
-      employee_id: employeeId,
-      action: 'Update',
+      employee_id: storekeeperId,
+      action: 'Transfer',
       table_name: 'backpack_employee',
       record_id: backpackEmployee.id,
-      details: updateBackpackEmployeeDto,
+      details: {
+        count: count,
+        material: warehouseFilling.material.subtype_id.name,
+        sap: warehouseFilling.material.sap_number,
+        serial: warehouseFilling.material.serial,
+        inventory_number: warehouseFilling.material.inventory_number,
+        storekeeper: storekeeperName,
+        owner: ownerName,
+      },
     });
 
     return backpackEmployee;
   }
 
-  // Метод для получения всех записей backpack_employee
-  async findAll(): Promise<BackpackEmployee[]> {
-    return this.backpackEmployeeRepository.find();
-  }
-
-  // Метод для получения всех записей для конкретного сотрудника
-  async findByEmployeeId(employeeId: number): Promise<BackpackEmployee[]> {
-    const records = await this.backpackEmployeeRepository.find({
-      where: { employee: { id: employeeId } },
+  // Возврат материала на склад от специалиста
+  async returnMaterial(
+    backpackEmployeeId: number,
+    count: number,
+    token: string,
+  ): Promise<BackpackEmployee> {
+    const backpackEmployee = await this.backpackEmployeeRepository.findOne({
+      where: { id: backpackEmployeeId },
+      relations: ['warehouse_filling_id'],
     });
 
-    if (!records.length) {
+    if (!backpackEmployee || backpackEmployee.count < count) {
       throw new NotFoundException(
-        `No records found for employee with ID ${employeeId}`,
+        'Недостаточно материала в рюкзаке сотрудника',
       );
     }
 
-    return records;
+    backpackEmployee.count -= count;
+    await this.backpackEmployeeRepository.save(backpackEmployee);
+
+    const warehouseFilling = backpackEmployee.warehouse_filling_id;
+    warehouseFilling.count += count;
+    await this.warehouseFillingRepository.save(warehouseFilling);
+
+    const storekeeperId = this.extractUserIdFromToken(token);
+    const storekeeperName = await this.getEmployeeName(storekeeperId);
+    const ownerName = await this.getEmployeeName(
+      backpackEmployee.employee_id.id,
+    );
+
+    await this.auditLogService.logAction({
+      employee_id: storekeeperId,
+      action: 'Return',
+      table_name: 'warehouse_filling',
+      record_id: warehouseFilling.id,
+      details: {
+        count: count,
+        material: warehouseFilling.material.subtype_id.name,
+        sap: warehouseFilling.material.sap_number,
+        sn: warehouseFilling.material.serial,
+        inventory_number: warehouseFilling.material.inventory_number,
+        storekeeper: storekeeperName,
+        owner: ownerName,
+      },
+    });
+
+    return backpackEmployee;
+  }
+
+  async getAllMaterials(): Promise<BackpackEmployeeDto[]> {
+    const materials = await this.backpackEmployeeRepository.find({
+      relations: [
+        'warehouse_filling_id',
+        'warehouse_filling_id.material',
+        'warehouse_filling_id.material.category_id',
+        'warehouse_filling_id.material.type_id',
+        'warehouse_filling_id.material.subtype_id',
+        'employee_id',
+      ],
+    });
+
+    return materials.map((material) => new BackpackEmployeeDto(material));
+  }
+
+  async getEmployeeMaterials(token: string): Promise<MyBackpackDto[]> {
+    const decodedToken = this.jwtService.decode(token);
+    const employeeId = decodedToken.sub;
+
+    const materials = await this.backpackEmployeeRepository.find({
+      where: { employee_id: { id: employeeId } },
+      relations: [
+        'warehouse_filling_id',
+        'warehouse_filling_id.material',
+        'warehouse_filling_id.material.category_id',
+        'warehouse_filling_id.material.type_id',
+        'warehouse_filling_id.material.subtype_id',
+        'employee_id',
+      ],
+    });
+
+    return materials.map((material) => new MyBackpackDto(material));
   }
 }

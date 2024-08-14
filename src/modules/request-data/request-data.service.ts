@@ -11,6 +11,7 @@ import { Employee, EmployeeRole } from '../employee/employee.entity';
 import { Requests, RequestStatus } from '../request/requests.entity';
 import { UserResponseDto } from '../employee/employee.dto';
 import { DetailedInternalServerErrorException } from 'src/error/all-exceptions.filter';
+import { RequestDataResponseDto } from './request-data.dto';
 
 @Injectable()
 export class RequestDataService {
@@ -41,7 +42,9 @@ export class RequestDataService {
         );
       }
 
-      if ([RequestStatus.CLOSED, RequestStatus.CANCELLED].includes(request.status)) {
+      if (
+        [RequestStatus.CLOSED, RequestStatus.CANCELLED].includes(request.status)
+      ) {
         throw new ForbiddenException(
           'Request is closed or cancelled and cannot be modified',
         );
@@ -89,6 +92,17 @@ export class RequestDataService {
     };
   }
 
+  // Получение имени сотрудника
+  private async getEmployeeName(employeeId: number): Promise<string> {
+    const employee = await this.employeeRepository.findOne({
+      where: { id: employeeId },
+    });
+    if (!employee) {
+      throw new UnauthorizedException('Employee not found');
+    }
+    return employee.name;
+  }
+
   // Назначение заявки исполнителю
   async assignRequest(
     requestId: number,
@@ -111,6 +125,15 @@ export class RequestDataService {
 
       if (!request || !executor || !performer) {
         throw new UnauthorizedException('Request or Employee not found');
+      }
+
+      // Проверяем статус заявки
+      if (
+        [RequestStatus.CLOSED, RequestStatus.CANCELLED].includes(request.status)
+      ) {
+        throw new ForbiddenException(
+          'Request is closed or cancelled and cannot be modified',
+        );
       }
 
       // Проверяем, не назначен ли уже этот сотрудник на эту заявку
@@ -157,6 +180,15 @@ export class RequestDataService {
 
       if (!request) {
         throw new UnauthorizedException('Request not found');
+      }
+
+      // Проверка статуса заявки
+      if (
+        [RequestStatus.CLOSED, RequestStatus.CANCELLED].includes(request.status)
+      ) {
+        throw new ForbiddenException(
+          'Request is closed or cancelled and cannot be modified',
+        );
       }
 
       // Удаляем исполнителя
@@ -224,18 +256,20 @@ export class RequestDataService {
   }
 
   // Получить записи назначенных заявок на конкретного пользователя
-  async getAssignedRequests(token: string): Promise<Requests[]> {
+  async getAssignedRequests(token: string): Promise<RequestDataResponseDto[]> {
     try {
       const userId = this.extractUserIdFromToken(token);
 
       // Находим все записи RequestData, где текущий пользователь назначен исполнителем
       const assignedRequestData = await this.requestDataRepository.find({
         where: { performer_id: { id: userId } },
-        relations: ['request'],
+        relations: ['request', 'executor_id', 'performer_id'],
       });
 
-      // Возвращаем список заявок, назначенных текущему пользователю
-      return assignedRequestData.map((data) => data.request);
+      // Преобразуем данные в RequestDataResponseDto и возвращаем результат
+      return assignedRequestData.map(
+        (data) => new RequestDataResponseDto(data),
+      );
     } catch (error) {
       throw new DetailedInternalServerErrorException(
         'Error retrieving assigned requests',
@@ -259,7 +293,10 @@ export class RequestDataService {
       const allowedRoles = [EmployeeRole.Dispatcher, EmployeeRole.Performer];
       await this.validateAccess(request, userId, allowedRoles);
 
-      if (request.status === RequestStatus.CLOSED || request.status === RequestStatus.CANCELLED) {
+      if (
+        request.status === RequestStatus.CLOSED ||
+        request.status === RequestStatus.CANCELLED
+      ) {
         throw new ForbiddenException('Request is already closed or cancelled');
       }
 
@@ -272,17 +309,6 @@ export class RequestDataService {
         error.message,
       );
     }
-  }
-
-  // Получение имени сотрудника
-  private async getEmployeeName(employeeId: number): Promise<string> {
-    const employee = await this.employeeRepository.findOne({
-      where: { id: employeeId },
-    });
-    if (!employee) {
-      throw new UnauthorizedException('Employee not found');
-    }
-    return employee.name;
   }
 
   // Добавление комментария к заявке
@@ -357,20 +383,15 @@ export class RequestDataService {
   }
 
   // Все назначенные заявки (без фильтрации)
-  async findAll(): Promise<any[]> {
+  async findAll(): Promise<RequestDataResponseDto[]> {
     try {
       const requestData = await this.requestDataRepository.find({
         relations: ['request', 'executor_id', 'performer_id'],
       });
-
-      return requestData.map((data) => ({
-        ...data,
-        executor_id: this.transformEmployeeToDto(data.executor_id),
-        performer_id: this.transformEmployeeToDto(data.performer_id),
-      }));
+      return requestData.map((data) => new RequestDataResponseDto(data));
     } catch (error) {
       throw new DetailedInternalServerErrorException(
-        'Error retrieving all request data',
+        'Error retrieving request data',
         error.message,
       );
     }

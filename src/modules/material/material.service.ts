@@ -6,7 +6,7 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Material } from './material.entity';
-import { CreateMaterialDto, UpdateMaterialDto } from './material.dto';
+import { CreateMaterialDto, MaterialDto, UpdateMaterialDto } from './material.dto';
 import { DetailedInternalServerErrorException } from 'src/error/all-exceptions.filter';
 import { MaterialCategory } from '../material-category/material-category.entity';
 import { MaterialSubtype } from '../material-subtype/material-subtype.entity';
@@ -135,11 +135,12 @@ export class MaterialService {
     }
   }
 
-  async findAll(): Promise<Material[]> {
+  async findAll(): Promise<MaterialDto[]> {
     try {
-      return await this.materialRepository.find({
+      const materials = await this.materialRepository.find({
         relations: ['category_id', 'type_id', 'subtype_id'],
       });
+      return materials.map((material) => new MaterialDto(material));
     } catch (error) {
       throw new DetailedInternalServerErrorException(
         'Error retrieving materials',

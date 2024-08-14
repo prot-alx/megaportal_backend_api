@@ -14,11 +14,21 @@ import { Request } from 'express';
 import { RequestDataService } from './request-data.service';
 import { AuthGuard } from '@nestjs/passport';
 import { JwtService } from '@nestjs/jwt';
-import { ChangeRequestStatusDto, RequestDataDto } from './request-data.dto';
-import { Requests } from '../request/requests.entity';
+import {
+  ChangeRequestStatusDto,
+  RequestDataDto,
+  RequestDataResponseDto,
+} from './request-data.dto';
 import { DetailedInternalServerErrorException } from 'src/error/all-exceptions.filter';
 import { AddCommentDto } from '../request/request.dto';
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
+import { EmployeeRole } from '../employee/employee.entity';
+import { Roles } from 'src/common/decorators/roles.decorator';
 
 @ApiTags('Request-Data')
 @ApiBearerAuth()
@@ -31,6 +41,7 @@ export class RequestDataController {
   ) {}
 
   // Назначаем заявку
+  @Roles(EmployeeRole.Dispatcher)
   @Post('assign')
   @ApiOperation({
     summary:
@@ -58,12 +69,14 @@ export class RequestDataController {
     }
   }
 
-  // Смотрим назначенные заявки
+  // Смотрим назначенные на себя заявки
   @Get('/assigned')
   @ApiOperation({
     summary: 'Check requests // Смотрим все назначенные заявки',
   })
-  async getAssignedRequests(@Req() req: Request): Promise<Requests[]> {
+  async getAssignedRequests(
+    @Req() req: Request,
+  ): Promise<RequestDataResponseDto[]> {
     try {
       const token = req.headers.authorization?.split(' ')[1];
       if (!token) {
@@ -103,7 +116,7 @@ export class RequestDataController {
   @Patch(':id/status')
   @ApiOperation({
     summary:
-      'Change request status// Меняем статус. Нельзя ставить CLOSED или CANCELLED через этот эндпоинт',
+      'Change request status// Меняем статус. Нельзя ставить CLOSED или CANCELLED через этот эндпоинт. Для этого есть отдельные прописанные эндпоинты.',
   })
   async changeRequestStatus(
     @Param('id') requestId: number,
@@ -182,14 +195,19 @@ export class RequestDataController {
   @Get()
   @ApiOperation({
     summary:
-      'Find all request data // Получаем все данные о заявках. Включает информацию о заявках, исполнителях и назначениях.',
+      'Show all request data // Отобразить все данные по заявкам, включая исполнителей и сотрудников, назначивших заявки.',
   })
-  async findAll() {
+  @ApiResponse({
+    status: 200,
+    description: 'All request data retrieved successfully.',
+    type: [RequestDataResponseDto],
+  })
+  async findAll(): Promise<RequestDataResponseDto[]> {
     try {
       return await this.requestDataService.findAll();
     } catch (error) {
       throw new DetailedInternalServerErrorException(
-        'Error retrieving all request data',
+        'Error retrieving request data',
         error.message,
       );
     }

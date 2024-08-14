@@ -15,7 +15,11 @@ import {
   ApiBearerAuth,
 } from '@nestjs/swagger';
 import { MaterialService } from './material.service';
-import { CreateMaterialDto, UpdateMaterialDto } from './material.dto';
+import {
+  CreateMaterialDto,
+  MaterialDto,
+  UpdateMaterialDto,
+} from './material.dto';
 import { Material } from './material.entity';
 import { DetailedInternalServerErrorException } from 'src/error/all-exceptions.filter';
 import { AuthGuard } from '@nestjs/passport';
@@ -60,10 +64,10 @@ export class MaterialController {
   @ApiResponse({
     status: 200,
     description: 'List of materials',
-    type: [Material],
+    type: [MaterialDto],
   })
   @ApiResponse({ status: 500, description: 'Internal server error' })
-  async findAll(): Promise<Material[]> {
+  async findAll(): Promise<MaterialDto[]> {
     try {
       return await this.materialService.findAll();
     } catch (error) {

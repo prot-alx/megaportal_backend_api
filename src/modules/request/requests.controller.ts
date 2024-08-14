@@ -9,9 +9,9 @@ import {
   HttpCode,
 } from '@nestjs/common';
 import { RequestsService } from './requests.service';
-import { CreateRequestDto } from './request.dto';
+import { CreateRequestDto, RequestResponseDto } from './request.dto';
 import { AuthGuard } from '@nestjs/passport';
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { DetailedInternalServerErrorException } from 'src/error/all-exceptions.filter';
 
 @ApiTags('Request')
@@ -70,7 +70,12 @@ export class RequestsController {
     summary:
       'Show all requests // Отобразить все заявки. Без фильтров статусов, дат, типов, и прочих других. Вообще все заявки. Добавить фильтры потом',
   })
-  async findAll() {
+  @ApiResponse({
+    status: 200,
+    description: 'All requests retrieved successfully.',
+    type: [RequestResponseDto],
+  })
+  async findAll(): Promise<RequestResponseDto[]> {
     try {
       return await this.requestsService.findAll();
     } catch (error) {

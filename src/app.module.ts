@@ -29,6 +29,7 @@ import { RolesGuard } from './common/guards/roles.guard';
         database: configService.get<string>('DATABASE_NAME'),
         entities: [...entities],
         synchronize: true,
+        //logging: true,
       }),
       inject: [ConfigService],
     }),

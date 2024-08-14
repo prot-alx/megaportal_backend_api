@@ -14,7 +14,7 @@ export class WarehouseFilling {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @ManyToOne(() => Material)
+  @ManyToOne(() => Material, { eager: true })
   @JoinColumn({ name: 'material_id' })
   material: Material;
 

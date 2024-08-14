@@ -30,15 +30,15 @@ export class Material {
   @Column({ default: true })
   is_active: boolean;
 
-  @ManyToOne(() => MaterialCategory)
+  @ManyToOne(() => MaterialCategory, { eager: true })
   @JoinColumn({ name: 'category_id' })
   category_id: MaterialCategory;
 
-  @ManyToOne(() => MaterialType)
+  @ManyToOne(() => MaterialType, { eager: true })
   @JoinColumn({ name: 'type_id' })
   type_id: MaterialType;
 
-  @ManyToOne(() => MaterialSubtype)
+  @ManyToOne(() => MaterialSubtype, { eager: true })
   @JoinColumn({ name: 'subtype_id' })
   subtype_id: MaterialSubtype;
 

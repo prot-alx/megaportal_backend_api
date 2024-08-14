@@ -1,61 +1,78 @@
 import {
   Controller,
   Post,
-  Put,
   Body,
-  Param,
-  Query,
-  Get,
-  ParseIntPipe,
+  Headers,
   UseGuards,
+  Get,
 } from '@nestjs/common';
 import { BackpackEmployeeService } from './backpack-employee.service';
 import {
   CreateBackpackEmployeeDto,
-  UpdateBackpackEmployeeDto,
+  MyBackpackDto,
 } from './backpack-employee.dto';
-import { BackpackEmployee } from './backpack-employee.entity';
+
 import { AuthGuard } from '@nestjs/passport';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiTags, ApiBody } from '@nestjs/swagger';
+import { Roles } from 'src/common/decorators/roles.decorator';
+import { EmployeeRole } from '../employee/employee.entity';
 
 @ApiTags('Backpack')
 @ApiBearerAuth()
-@Controller('backpack-employee')
+@Controller('backpack')
 @UseGuards(AuthGuard('jwt'))
 export class BackpackEmployeeController {
   constructor(
     private readonly backpackEmployeeService: BackpackEmployeeService,
   ) {}
 
-  @Post()
-  async create(
+  @Post('transfer')
+  @Roles(EmployeeRole.Storekeeper)
+  @ApiBody({
+    description: 'Данные для передачи материала',
+    type: CreateBackpackEmployeeDto,
+  })
+  async transferMaterial(
     @Body() createBackpackEmployeeDto: CreateBackpackEmployeeDto,
-    @Query('employeeId') employeeId: number,
+    @Headers('authorization') authHeader: string,
   ) {
-    return this.backpackEmployeeService.create(
-      createBackpackEmployeeDto,
-      employeeId,
+    const token = authHeader.replace('Bearer ', '');
+    return this.backpackEmployeeService.transferMaterial(
+      createBackpackEmployeeDto.warehouse_filling_id,
+      createBackpackEmployeeDto.employee_id,
+      createBackpackEmployeeDto.count,
+      token,
     );
   }
 
-  @Put(':id')
-  async update(
-    @Param('id') id: number,
-    @Body() updateBackpackEmployeeDto: UpdateBackpackEmployeeDto,
-    @Query('employeeId') employeeId: number,
+  @Post('return')
+  @Roles(EmployeeRole.Storekeeper)
+  @ApiBody({
+    description: 'Данные для возврата материала',
+  })
+  async returnMaterial(
+    @Body() returnMaterialDto: { backpack_employee_id: number; count: number },
+    @Headers('authorization') authHeader: string,
   ) {
-    return this.backpackEmployeeService.update(
-      id,
-      updateBackpackEmployeeDto,
-      employeeId,
+    const token = authHeader.replace('Bearer ', '');
+    return this.backpackEmployeeService.returnMaterial(
+      returnMaterialDto.backpack_employee_id,
+      returnMaterialDto.count,
+      token,
     );
   }
 
-  // Эндпоинт для получения всех записей для конкретного сотрудника
-  @Get('employee/:employeeId')
-  async getByEmployeeId(
-    @Param('employeeId', ParseIntPipe) employeeId: number,
-  ): Promise<BackpackEmployee[]> {
-    return this.backpackEmployeeService.findByEmployeeId(employeeId);
+  @Get('all-materials')
+  @Roles(EmployeeRole.Storekeeper)
+  async getAllMaterials() {
+    return this.backpackEmployeeService.getAllMaterials();
+  }
+
+  @Get('my-materials')
+  async getEmployeeMaterials(
+    @Headers('authorization') authHeader: string,
+  ): Promise<MyBackpackDto[]> {
+    const token = authHeader.replace('Bearer ', '');
+    return this.backpackEmployeeService.getEmployeeMaterials(token);
   }
 }

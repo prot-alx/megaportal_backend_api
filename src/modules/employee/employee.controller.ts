@@ -13,7 +13,14 @@ import { Employee } from './employee.entity';
 import { CreateEmployeeDto, UpdateEmployeeDto } from './employee.dto';
 import { AuthGuard } from '@nestjs/passport';
 import { DetailedInternalServerErrorException } from 'src/error/all-exceptions.filter';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBody,
+  ApiParam,
+} from '@nestjs/swagger';
 
 @ApiTags('Employees')
 @ApiBearerAuth()
@@ -23,6 +30,16 @@ export class EmployeeController {
   constructor(private readonly employeeService: EmployeeService) {}
 
   @Get()
+  @ApiOperation({ summary: 'Получить список всех сотрудников' })
+  @ApiResponse({
+    status: 200,
+    description: 'Список всех сотрудников',
+    type: [Employee],
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Ошибка при получении списка сотрудников',
+  })
   async findAll(): Promise<Employee[]> {
     try {
       return await this.employeeService.findAll();
@@ -35,6 +52,17 @@ export class EmployeeController {
   }
 
   @Post()
+  @ApiOperation({ summary: 'Создать нового сотрудника' })
+  @ApiBody({
+    description: 'Данные для создания нового сотрудника',
+    type: CreateEmployeeDto,
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'Создан новый сотрудник',
+    type: Employee,
+  })
+  @ApiResponse({ status: 500, description: 'Ошибка при создании сотрудника' })
   async create(
     @Body() createEmployeeDto: CreateEmployeeDto,
   ): Promise<Employee> {
@@ -49,6 +77,19 @@ export class EmployeeController {
   }
 
   @Put(':id')
+  @ApiOperation({ summary: 'Обновить данные сотрудника по ID' })
+  @ApiParam({ name: 'id', type: Number, description: 'ID сотрудника' })
+  @ApiBody({
+    description: 'Данные для обновления сотрудника',
+    type: UpdateEmployeeDto,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Обновленный сотрудник',
+    type: Employee,
+  })
+  @ApiResponse({ status: 404, description: 'Сотрудник не найден' })
+  @ApiResponse({ status: 500, description: 'Ошибка при обновлении сотрудника' })
   async update(
     @Param('id') id: number,
     @Body() updateEmployeeDto: UpdateEmployeeDto,
@@ -64,6 +105,18 @@ export class EmployeeController {
   }
 
   @Get(':id')
+  @ApiOperation({ summary: 'Получить данные сотрудника по ID' })
+  @ApiParam({ name: 'id', type: Number, description: 'ID сотрудника' })
+  @ApiResponse({
+    status: 200,
+    description: 'Данные сотрудника',
+    type: Employee,
+  })
+  @ApiResponse({ status: 404, description: 'Сотрудник не найден' })
+  @ApiResponse({
+    status: 500,
+    description: 'Ошибка при получении данных сотрудника',
+  })
   async findOne(@Param('id') id: number): Promise<Employee> {
     try {
       return await this.employeeService.findOne(id);

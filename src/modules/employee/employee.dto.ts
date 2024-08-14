@@ -3,57 +3,97 @@ import { EmployeeRole } from './employee.entity';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateEmployeeDto {
-  @ApiProperty()
+  @ApiProperty({
+    description: 'Логин сотрудника',
+    example: 'john_doe',
+  })
   @IsString()
   login: string;
 
-  @ApiProperty()
+  @ApiProperty({
+    description: 'Пароль сотрудника',
+    example: 'securePassword123',
+  })
   @IsString()
   password: string;
 }
 
 export class UpdateEmployeeDto {
-  @ApiProperty()
+  @ApiProperty({
+    description: 'Внешний идентификатор сотрудника',
+    example: 'EXT12345',
+    required: false,
+  })
   @IsOptional()
   @IsString()
   external_id?: string;
 
-  @ApiProperty()
+  @ApiProperty({
+    description: 'Имя сотрудника',
+    example: 'John Doe',
+    required: false,
+  })
   @IsOptional()
   @IsString()
   name?: string;
 
-  @ApiProperty()
+  @ApiProperty({
+    description: 'Пароль сотрудника',
+    example: 'newSecurePassword123',
+  })
   @IsString()
   password: string;
 
-  @ApiProperty()
+  @ApiProperty({
+    description: 'Адрес сотрудника',
+    example: '123 Main St, Springfield',
+    required: false,
+  })
   @IsOptional()
   @IsString()
   address?: string;
 
-  @ApiProperty()
+  @ApiProperty({
+    description: 'Телефон сотрудника',
+    example: '+1234567890',
+    required: false,
+  })
   @IsOptional()
   @IsString()
   phone?: string;
 
-  @ApiProperty()
+  @ApiProperty({
+    description: 'Роль сотрудника',
+    enum: EmployeeRole,
+    required: false,
+  })
   @IsOptional()
   @IsEnum(EmployeeRole)
   role?: EmployeeRole;
 
-  @ApiProperty()
+  @ApiProperty({
+    description: 'Активен ли сотрудник',
+    example: true,
+    required: false,
+  })
   @IsOptional()
   @IsBoolean()
   is_active?: boolean;
 }
 
 export class UserResponseDto {
-  @ApiProperty()
+  @ApiProperty({
+    description: 'ID пользователя',
+    example: '1',
+  })
   @IsString()
   id: number;
 
-  @ApiProperty()
+  @ApiProperty({
+    description: 'Имя пользователя',
+    example: 'John Doe',
+    required: false,
+  })
   @IsOptional()
   @IsString()
   name?: string;

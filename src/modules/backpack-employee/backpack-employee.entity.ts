@@ -17,11 +17,11 @@ export class BackpackEmployee {
 
   @ManyToOne(() => Employee)
   @JoinColumn({ name: 'employee_id' })
-  employee: Employee;
+  employee_id: Employee;
 
   @ManyToOne(() => WarehouseFilling)
   @JoinColumn({ name: 'warehouse_filling_id' })
-  warehouseFilling: WarehouseFilling;
+  warehouse_filling_id: WarehouseFilling;
 
   @Column()
   count: number;

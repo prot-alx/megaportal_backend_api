@@ -9,7 +9,7 @@ import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Not, Repository } from 'typeorm';
 import { Employee } from '../employee/employee.entity';
-import { CreateRequestDto } from './request.dto';
+import { CreateRequestDto, RequestResponseDto } from './request.dto';
 import { UserResponseDto } from '../employee/employee.dto';
 import { DetailedInternalServerErrorException } from 'src/error/all-exceptions.filter';
 
@@ -141,15 +141,12 @@ export class RequestsService {
     }
   }
 
-  async findAll(): Promise<any[]> {
+  async findAll(): Promise<RequestResponseDto[]> {
     try {
       const requests = await this.requestsRepository.find({
         relations: ['hr_id'],
       });
-      return requests.map((request) => ({
-        ...request,
-        hr_id: this.transformEmployeeToDto(request.hr_id), // Преобразование `hr_id` в DTO
-      }));
+      return requests.map((request) => new RequestResponseDto(request));
     } catch (error) {
       throw new DetailedInternalServerErrorException(
         'Error retrieving requests',
