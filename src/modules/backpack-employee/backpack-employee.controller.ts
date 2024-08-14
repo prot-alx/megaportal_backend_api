@@ -13,7 +13,15 @@ import {
 } from './backpack-employee.dto';
 
 import { AuthGuard } from '@nestjs/passport';
-import { ApiBearerAuth, ApiTags, ApiBody } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiTags,
+  ApiBody,
+  ApiOkResponse,
+  ApiUnauthorizedResponse,
+  ApiBadRequestResponse,
+  ApiOperation,
+} from '@nestjs/swagger';
 import { Roles } from 'src/common/decorators/roles.decorator';
 import { EmployeeRole } from '../employee/employee.entity';
 
@@ -31,6 +39,18 @@ export class BackpackEmployeeController {
   @ApiBody({
     description: 'Данные для передачи материала',
     type: CreateBackpackEmployeeDto,
+  })
+  @ApiOkResponse({
+    description: 'Материал успешно передан.',
+  })
+  @ApiUnauthorizedResponse({
+    description: 'Ошибка авторизации. Токен отсутствует или некорректен.',
+  })
+  @ApiBadRequestResponse({
+    description: 'Ошибка запроса. Некорректные данные.',
+  })
+  @ApiOperation({
+    summary: 'Передать материал сотруднику',
   })
   async transferMaterial(
     @Body() createBackpackEmployeeDto: CreateBackpackEmployeeDto,
@@ -50,6 +70,18 @@ export class BackpackEmployeeController {
   @ApiBody({
     description: 'Данные для возврата материала',
   })
+  @ApiOkResponse({
+    description: 'Материал успешно возвращён.',
+  })
+  @ApiUnauthorizedResponse({
+    description: 'Ошибка авторизации. Токен отсутствует или некорректен.',
+  })
+  @ApiBadRequestResponse({
+    description: 'Ошибка запроса. Некорректные данные.',
+  })
+  @ApiOperation({
+    summary: 'Вернуть материалы на склад',
+  })
   async returnMaterial(
     @Body() returnMaterialDto: { backpack_employee_id: number; count: number },
     @Headers('authorization') authHeader: string,
@@ -64,11 +96,31 @@ export class BackpackEmployeeController {
 
   @Get('all-materials')
   @Roles(EmployeeRole.Storekeeper)
+  @ApiOkResponse({
+    description: 'Список всех материалов.',
+    type: [CreateBackpackEmployeeDto],
+  })
+  @ApiUnauthorizedResponse({
+    description: 'Ошибка авторизации. Токен отсутствует или некорректен.',
+  })
+  @ApiOperation({
+    summary: 'Получить все материалы, которые у сотрудников.',
+  })
   async getAllMaterials() {
     return this.backpackEmployeeService.getAllMaterials();
   }
 
   @Get('my-materials')
+  @ApiOkResponse({
+    description: 'Список материалов сотрудника.',
+    type: [MyBackpackDto],
+  })
+  @ApiUnauthorizedResponse({
+    description: 'Ошибка авторизации. Токен отсутствует или некорректен.',
+  })
+  @ApiOperation({
+    summary: 'Получить свои материалы (для исполнителей)',
+  })
   async getEmployeeMaterials(
     @Headers('authorization') authHeader: string,
   ): Promise<MyBackpackDto[]> {
