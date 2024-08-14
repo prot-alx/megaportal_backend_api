@@ -9,6 +9,7 @@ import { MaterialType } from './material-type/material-type.entity';
 import { Requests } from './request/requests.entity';
 import { RequestData } from './request-data/request-data.entity';
 import { WarehouseFilling } from './warehouse-filling/warehouse-filling.entity';
+import { OldBaza } from './old-db/old-db.entity';
 
 export const entities = [
   AuditLog,
@@ -22,4 +23,5 @@ export const entities = [
   Requests,
   RequestData,
   WarehouseFilling,
+  OldBaza,
 ];

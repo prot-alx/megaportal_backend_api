@@ -6,6 +6,7 @@ import { MaterialConsumptionModule } from './material-consumption/material-consu
 import { MaterialSubtypeModule } from './material-subtype/material-subtype.module';
 import { MaterialTypeModule } from './material-type/material-type.module';
 import { MaterialModule } from './material/material.module';
+import { OldDbModule } from './old-db/old-db.module';
 import { RequestDataModule } from './request-data/request-data.module';
 import { RequestsModule } from './request/requests.module';
 import { WarehouseFillingModule } from './warehouse-filling/warehouse-filling.module';
@@ -22,4 +23,5 @@ export const modules = [
   RequestsModule,
   RequestDataModule,
   WarehouseFillingModule,
+  OldDbModule,
 ];
