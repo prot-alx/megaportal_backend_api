@@ -98,7 +98,7 @@ export class RequestDataService {
       where: { id: employeeId },
     });
     if (!employee) {
-      throw new UnauthorizedException('Employee not found');
+      throw new UnauthorizedException('Сотрудник не найден.');
     }
     return employee.name;
   }
@@ -124,7 +124,7 @@ export class RequestDataService {
       });
 
       if (!request || !executor || !performer) {
-        throw new UnauthorizedException('Request or Employee not found');
+        throw new UnauthorizedException('Request or Сотрудник не найден.');
       }
 
       // Проверяем статус заявки

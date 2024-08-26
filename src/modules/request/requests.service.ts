@@ -59,7 +59,7 @@ export class RequestsService {
       });
 
       if (!employee) {
-        throw new NotFoundException('Employee not found');
+        throw new NotFoundException('Сотрудник не найден.');
       }
 
       // Проверяем, есть ли активные заявки для этого клиента
@@ -150,6 +150,28 @@ export class RequestsService {
     } catch (error) {
       throw new DetailedInternalServerErrorException(
         'Error retrieving requests',
+        error.message,
+      );
+    }
+  }
+
+  async findFiltered(status?: RequestStatus): Promise<RequestResponseDto[]> {
+    try {
+      const queryBuilder =
+        this.requestsRepository.createQueryBuilder('request');
+
+      if (status) {
+        queryBuilder.andWhere('request.status = :status', { status });
+      }
+
+      const requests = await queryBuilder
+        .leftJoinAndSelect('request.hr_id', 'hr_id')
+        .getMany();
+
+      return requests.map((request) => new RequestResponseDto(request));
+    } catch (error) {
+      throw new DetailedInternalServerErrorException(
+        'Error retrieving filtered requests',
         error.message,
       );
     }

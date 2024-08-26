@@ -5,4 +5,5 @@ export interface JwtPayload {
   login: string; // логин сотрудника
   role: EmployeeRole; // роль сотрудника
   is_active: boolean; // статус активности
+  name: string;
 }

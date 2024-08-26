@@ -7,12 +7,19 @@ import {
   Req,
   UnauthorizedException,
   HttpCode,
+  Query,
 } from '@nestjs/common';
 import { RequestsService } from './requests.service';
 import { CreateRequestDto, RequestResponseDto } from './request.dto';
 import { AuthGuard } from '@nestjs/passport';
-import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 import { DetailedInternalServerErrorException } from 'src/error/all-exceptions.filter';
+import { RequestStatus } from './requests.entity';
 
 @ApiTags('Request')
 @ApiBearerAuth()
@@ -81,6 +88,29 @@ export class RequestsController {
     } catch (error) {
       throw new DetailedInternalServerErrorException(
         'Error retrieving requests',
+        error.message,
+      );
+    }
+  }
+
+  @Get('filtered')
+  @ApiOperation({
+    summary:
+      'Get filtered requests // Получить заявки с фильтрацией по статусу',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Filtered requests retrieved successfully.',
+    type: [RequestResponseDto],
+  })
+  async findFiltered(
+    @Query('status') status?: RequestStatus,
+  ): Promise<RequestResponseDto[]> {
+    try {
+      return await this.requestsService.findFiltered(status);
+    } catch (error) {
+      throw new DetailedInternalServerErrorException(
+        'Error retrieving filtered requests',
         error.message,
       );
     }

@@ -45,7 +45,7 @@ export class EmployeeController {
       return await this.employeeService.findAll();
     } catch (error) {
       throw new DetailedInternalServerErrorException(
-        'Error retrieving employees',
+        'Ошибка получения данных о сотрудниках.',
         error.message,
       );
     }
@@ -125,7 +125,7 @@ export class EmployeeController {
         throw error;
       }
       throw new DetailedInternalServerErrorException(
-        'Error retrieving employee',
+        'Ошибка получения данных о сотруднике.',
         error.message,
       );
     }

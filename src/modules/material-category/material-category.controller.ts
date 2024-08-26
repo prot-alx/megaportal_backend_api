@@ -71,7 +71,7 @@ export class MaterialCategoryController {
   }
 
   @Get()
-  @Roles(EmployeeRole.Performer)
+  @Roles(EmployeeRole.Performer, EmployeeRole.Admin)
   @ApiOperation({ summary: 'Get all categories // Получить все категории' })
   async findAll(): Promise<MaterialCategory[]> {
     try {

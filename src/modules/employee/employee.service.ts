@@ -22,7 +22,7 @@ export class EmployeeService {
       return await this.employeeRepository.find();
     } catch (error) {
       throw new DetailedInternalServerErrorException(
-        'Error retrieving employees',
+        'Ошибка получения данных о сотрудниках.',
         error.message,
       );
     }
@@ -64,12 +64,12 @@ export class EmployeeService {
         where: { login },
       });
       if (!employee) {
-        throw new NotFoundException('Employee not found');
+        throw new NotFoundException('Ошибка данных.');
       }
       return employee;
     } catch (error) {
       throw new DetailedInternalServerErrorException(
-        'Error retrieving employee',
+        'Неверный логин или пароль.',
         error.message,
       );
     }
@@ -84,7 +84,7 @@ export class EmployeeService {
       return employee;
     } catch (error) {
       throw new DetailedInternalServerErrorException(
-        'Error retrieving employee',
+        'Ошибка получения данных о сотруднике. 1',
         error.message,
       );
     }

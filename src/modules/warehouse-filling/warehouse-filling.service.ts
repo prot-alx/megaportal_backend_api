@@ -50,7 +50,7 @@ export class WarehouseFillingService {
       where: { id: employeeId },
     });
     if (!employee) {
-      throw new UnauthorizedException('Employee not found');
+      throw new UnauthorizedException('Сотрудник не найден.');
     }
     return employee.name;
   }

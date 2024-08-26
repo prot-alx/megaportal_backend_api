@@ -17,8 +17,13 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   // Проверка токена и извлечение информации из пэйлоада
   async validate(payload: JwtPayload): Promise<Partial<Employee>> {
     if (!payload.is_active) {
-      throw new UnauthorizedException('User is not active');
+      throw new UnauthorizedException('Данная учетная запись отключена.');
     }
-    return { id: payload.id, login: payload.login, role: payload.role };
+    return {
+      id: payload.id,
+      login: payload.login,
+      role: payload.role,
+      name: payload.name,
+    };
   }
 }
