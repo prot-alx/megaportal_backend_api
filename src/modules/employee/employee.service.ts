@@ -6,7 +6,11 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Employee, EmployeeRole } from './employee.entity';
-import { CreateEmployeeDto, UpdateEmployeeDto } from './employee.dto';
+import {
+  CreateEmployeeDto,
+  EmployeeSummaryDto,
+  UpdateEmployeeDto,
+} from './employee.dto';
 import * as bcrypt from 'bcrypt';
 import { DetailedInternalServerErrorException } from 'src/error/all-exceptions.filter';
 
@@ -76,6 +80,7 @@ export class EmployeeService {
   }
 
   async findOne(id: number): Promise<Employee> {
+    console.log('Вызов метода findOne с id:', id);
     try {
       const employee = await this.employeeRepository.findOne({ where: { id } });
       if (!employee) {
@@ -83,13 +88,13 @@ export class EmployeeService {
       }
       return employee;
     } catch (error) {
+      console.error('Ошибка в методе findOne:', error.message);
       throw new DetailedInternalServerErrorException(
-        'Ошибка получения данных о сотруднике. 1',
+        'Ошибка получения данных о сотруднике. 123',
         error.message,
       );
     }
   }
-
   async update(
     id: number,
     updateEmployeeDto: UpdateEmployeeDto,
@@ -129,6 +134,32 @@ export class EmployeeService {
     } catch (error) {
       throw new DetailedInternalServerErrorException(
         'Error removing employee',
+        error.message,
+      );
+    }
+  }
+
+  // Метод для поиска активных сотрудников по ролям
+  async findByRoles(roles: EmployeeRole[]): Promise<EmployeeSummaryDto[]> {
+    try {
+      const queryBuilder =
+        this.employeeRepository.createQueryBuilder('employee');
+
+      queryBuilder
+        .where('employee.role IN (:...roles)', { roles })
+        .andWhere('employee.is_active = :is_active', { is_active: true });
+
+      const employees = await queryBuilder.getMany();
+
+      return employees.map((employee) => ({
+        id: employee.id,
+        name: employee.name,
+        role: employee.role,
+      }));
+    } catch (error) {
+      console.error('Error in findByRoles:', error); // Логируем ошибку
+      throw new DetailedInternalServerErrorException(
+        'Ошибка получения данных о сотрудниках.',
         error.message,
       );
     }

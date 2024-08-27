@@ -7,10 +7,15 @@ import {
   Param,
   UseGuards,
   NotFoundException,
+  Query,
 } from '@nestjs/common';
 import { EmployeeService } from './employee.service';
-import { Employee } from './employee.entity';
-import { CreateEmployeeDto, UpdateEmployeeDto } from './employee.dto';
+import { Employee, EmployeeRole } from './employee.entity';
+import {
+  CreateEmployeeDto,
+  EmployeeSummaryDto,
+  UpdateEmployeeDto,
+} from './employee.dto';
 import { AuthGuard } from '@nestjs/passport';
 import { DetailedInternalServerErrorException } from 'src/error/all-exceptions.filter';
 import {
@@ -20,6 +25,7 @@ import {
   ApiResponse,
   ApiBody,
   ApiParam,
+  ApiQuery,
 } from '@nestjs/swagger';
 
 @ApiTags('Employees')
@@ -99,6 +105,43 @@ export class EmployeeController {
     } catch (error) {
       throw new DetailedInternalServerErrorException(
         'Error updating employee',
+        error.message,
+      );
+    }
+  }
+
+  @Get('filtered')
+  @ApiOperation({ summary: 'Получить сотрудников по ролям' })
+  @ApiQuery({
+    name: 'roles',
+    required: false,
+    isArray: true,
+    description: 'Роли сотрудников',
+    type: String, // Убедитесь, что тип указан как String
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Список сотрудников по ролям',
+    type: [EmployeeSummaryDto],
+  })
+  @ApiResponse({ status: 404, description: 'Сотрудники не найдены' })
+  @ApiResponse({
+    status: 500,
+    description: 'Ошибка при получении списка сотрудников по ролям',
+  })
+  async findByRoles(
+    @Query('roles') roles: string[], // Измените тип на string[]
+  ): Promise<EmployeeSummaryDto[]> {
+    try {
+      // Преобразование строковых значений в перечисление EmployeeRole
+      const roleEnumValues: EmployeeRole[] = roles.map(
+        (role) => EmployeeRole[role as keyof typeof EmployeeRole],
+      );
+      return await this.employeeService.findByRoles(roleEnumValues);
+    } catch (error) {
+      console.error('Error in findByRoles:', error); // Логируем ошибку
+      throw new DetailedInternalServerErrorException(
+        'Ошибка получения данных о сотрудниках.',
         error.message,
       );
     }
