@@ -1,14 +1,17 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import { ConfigService } from '@nestjs/config';
+
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { ValidationPipe } from '@nestjs/common';
+import { AppConfigService } from './config/config.service';
 
 async function startApp() {
   const startTime = process.hrtime();
   const app = await NestFactory.create(AppModule);
-  const configService = app.get(ConfigService);
-  const port = configService.get('API_PORT');
+
+  const configService = app.get(AppConfigService);
+
+  const port = configService.API_PORT;
 
   app.useGlobalPipes(new ValidationPipe());
 
@@ -30,7 +33,7 @@ async function startApp() {
 
     console.log(`APP STARTED AT PORT ${port} in ${timeInMs.toFixed(2)} ms`);
   } catch (error) {
-    console.log(error);
+    console.error(error);
   }
 }
 

@@ -1,52 +1,50 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
+import { ConfigModule } from './config/config.module';
 import { JwtStrategy } from './auth/jwt.strategy';
 import { AuthService } from './auth/auth.service';
 import { AuthModule } from './auth/auth.module';
 import { entities } from './modules/entities';
 import { modules } from './modules/modules';
-import configuration from './config/configuration';
 import { APP_FILTER, APP_GUARD } from '@nestjs/core';
 import { AllExceptionsFilter } from './error/all-exceptions.filter';
 import { RolesGuard } from './common/guards/roles.guard';
+import { AppConfigService } from './config/config.service';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({
-      load: [configuration],
-      isGlobal: true,
-    }),
+    ConfigModule,
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
-      useFactory: async (configService: ConfigService) => ({
+      useFactory: async (configService: AppConfigService) => ({
         type: 'postgres',
-        host: configService.get<string>('DATABASE_HOST'),
-        port: configService.get<number>('DATABASE_PORT'),
-        username: configService.get<string>('DATABASE_USERNAME'),
-        password: configService.get<string>('DATABASE_PASSWORD'),
-        database: configService.get<string>('DATABASE_NAME'),
+        host: configService.DATABASE_HOST,
+        port: configService.DATABASE_PORT,
+        username: configService.DATABASE_USERNAME,
+        password: configService.DATABASE_PASSWORD,
+        database: configService.DATABASE_NAME,
         entities: [...entities],
         synchronize: true,
         //logging: true,
       }),
-      inject: [ConfigService],
+      inject: [AppConfigService],
     }),
     JwtModule.registerAsync({
       imports: [ConfigModule],
-      useFactory: async (configService: ConfigService) => ({
-        secret: configService.get<string>('SECRET_JWT'),
+      useFactory: async (configService: AppConfigService) => ({
+        secret: configService.SECRET_JWT,
         signOptions: {
-          expiresIn: configService.get<string | number>('EXPIRE_JWT'),
+          expiresIn: configService.EXPIRE_JWT,
         },
       }),
-      inject: [ConfigService],
+      inject: [AppConfigService],
     }),
     AuthModule,
     ...modules,
   ],
   providers: [
+    AppConfigService,
     {
       provide: APP_FILTER,
       useClass: AllExceptionsFilter,
@@ -57,6 +55,8 @@ import { RolesGuard } from './common/guards/roles.guard';
     },
     AuthService,
     JwtStrategy,
+    RolesGuard,
   ],
+  exports: [AppConfigService],
 })
 export class AppModule {}

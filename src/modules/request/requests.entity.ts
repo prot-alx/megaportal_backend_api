@@ -45,6 +45,9 @@ export class Requests {
   @Column({ nullable: false })
   description: string;
 
+  @Column({ nullable: true })
+  client_contacts: string;
+
   @Column({ nullable: false })
   address: string;
 

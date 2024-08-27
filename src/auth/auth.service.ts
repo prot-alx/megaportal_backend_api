@@ -5,14 +5,14 @@ import { JwtPayload } from 'src/interfaces/jwt-payload.interface';
 import { Employee } from 'src/modules/employee/employee.entity';
 import { EmployeeService } from 'src/modules/employee/employee.service';
 import { Request } from 'express';
-import { ConfigService } from '@nestjs/config';
+import { AppConfigService } from 'src/config/config.service';
 
 @Injectable()
 export class AuthService {
   constructor(
     private readonly employeeService: EmployeeService,
     private readonly jwtService: JwtService,
-    private readonly configService: ConfigService,
+    private readonly configService: AppConfigService,
   ) {}
 
   async validateEmployee(
@@ -28,7 +28,6 @@ export class AuthService {
       return employee;
     }
 
-    // Возвращаем `null` для всех других случаев (неправильный логин или пароль)
     return null;
   }
 
@@ -43,21 +42,14 @@ export class AuthService {
       name: employee.name,
     };
 
-    const expireJwt = this.configService.get<string>('EXPIRE_JWT');
-    const jwtExpiresIn = parseInt(expireJwt, 10);
-
-    const expireRefreshJwt =
-      this.configService.get<string>('REFRESH_EXPIRE_JWT');
-    const jwtRefreshExpiresIn = parseInt(expireRefreshJwt, 10);
-
     return {
       access_token: this.jwtService.sign(payload, {
-        secret: this.configService.get<string>('SECRET_JWT'),
-        expiresIn: jwtExpiresIn,
+        secret: this.configService.SECRET_JWT,
+        expiresIn: this.configService.EXPIRE_JWT,
       }),
       refresh_token: this.jwtService.sign(payload, {
-        secret: this.configService.get<string>('REFRESH_JWT'),
-        expiresIn: jwtRefreshExpiresIn,
+        secret: this.configService.REFRESH_JWT,
+        expiresIn: this.configService.REFRESH_EXPIRE_JWT,
       }),
     };
   }
@@ -88,7 +80,7 @@ export class AuthService {
   async refreshToken(refreshToken: string): Promise<{ access_token: string }> {
     try {
       const payload = this.jwtService.verify<JwtPayload>(refreshToken, {
-        secret: this.configService.get<string>('REFRESH_JWT'),
+        secret: this.configService.REFRESH_JWT,
       });
 
       const employee = await this.employeeService.findOne(payload.id);

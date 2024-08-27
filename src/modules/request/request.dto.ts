@@ -26,6 +26,13 @@ export class CreateRequestDto {
   client_id: string;
 
   @ApiProperty({
+    description: 'Контактные данные клиента',
+    example: 'номер телефона',
+  })
+  @IsString()
+  client_contacts: string;
+
+  @ApiProperty({
     description: 'Описание заявки',
     example: 'Необходим ремонт оборудования',
   })
@@ -77,6 +84,15 @@ export class UpdateRequestDto {
   @IsOptional()
   @IsString()
   client_id?: string;
+
+  @ApiProperty({
+    description: 'Контактные данные клиента',
+    example: 'номер телефона',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  client_contacts?: string;
 
   @ApiProperty({
     description: 'Описание заявки',
@@ -172,6 +188,15 @@ export class RequestResponseDto {
   client_id: string;
 
   @ApiProperty({
+    description: 'Контактные данные клиента',
+    example: 'номер телефона',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  client_contacts?: string;
+
+  @ApiProperty({
     description: 'Описание заявки',
     example: 'Необходим ремонт оборудования',
   })
@@ -230,6 +255,7 @@ export class RequestResponseDto {
     this.id = request.id;
     this.ep_id = request.ep_id;
     this.client_id = request.client_id;
+    this.client_contacts = request.client_contacts;
     this.description = request.description;
     this.address = request.address;
     this.request_date = request.request_date;

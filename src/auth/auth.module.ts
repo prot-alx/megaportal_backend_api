@@ -2,9 +2,10 @@ import { Module } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { JwtModule } from '@nestjs/jwt';
-import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtStrategy } from './jwt.strategy';
-import { EmployeeModule } from 'src/modules/employee/employee.module';
+import { EmployeeModule } from '../modules/employee/employee.module';
+import { AppConfigService } from 'src/config/config.service';
+import { ConfigModule } from 'src/config/config.module';
 
 @Module({
   imports: [
@@ -12,11 +13,13 @@ import { EmployeeModule } from 'src/modules/employee/employee.module';
     EmployeeModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
-      useFactory: async (configService: ConfigService) => ({
-        secret: configService.get<string>('SECRET_JWT'),
-        signOptions: { expiresIn: configService.get<string>('EXPIRE_JWT') },
+      useFactory: async (configService: AppConfigService) => ({
+        secret: configService.SECRET_JWT,
+        signOptions: {
+          expiresIn: configService.EXPIRE_JWT,
+        },
       }),
-      inject: [ConfigService],
+      inject: [AppConfigService],
     }),
   ],
   providers: [AuthService, JwtStrategy],

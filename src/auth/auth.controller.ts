@@ -15,8 +15,8 @@ import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Request } from 'express';
 import { JwtPayload } from 'src/interfaces/jwt-payload.interface';
 import { JwtService } from '@nestjs/jwt';
-import { ConfigService } from '@nestjs/config';
 import { DetailedInternalServerErrorException } from 'src/error/all-exceptions.filter';
+import { AppConfigService } from 'src/config/config.service';
 
 @ApiTags('Authorization')
 @Controller('auth')
@@ -25,7 +25,7 @@ export class AuthController {
     private readonly authService: AuthService,
     private readonly employeeService: EmployeeService,
     private readonly jwtService: JwtService,
-    private readonly configService: ConfigService,
+    private readonly configService: AppConfigService, // Используем AppConfigService
   ) {}
 
   // Эндпоинт для логина пользователя
@@ -69,7 +69,7 @@ export class AuthController {
     }
   }
 
-  // Эндпоинт для проверки существования токена
+  // Эндпоинт для проверки существования access токена
   @Get('checkauth')
   @ApiOperation({
     summary:
@@ -80,6 +80,7 @@ export class AuthController {
     return { message: 'Token is valid', user };
   }
 
+  // Эндпоинт для обновления токена
   @Post('refresh')
   @ApiOperation({
     summary: 'Refresh Token // Обновление токенов по refresh token.',
@@ -87,11 +88,10 @@ export class AuthController {
   async refreshToken(@Body() refreshTokenDto: { refresh_token: string }) {
     const { refresh_token } = refreshTokenDto;
     try {
-      console.log('Received refresh token:', refresh_token); // Логирование полученного токена
       const payload = this.jwtService.verify<JwtPayload>(refresh_token, {
-        secret: this.configService.get<string>('REFRESH_JWT'),
+        secret: this.configService.REFRESH_JWT,
       });
-      console.log('Payload from refresh token:', payload); // Логирование полезной нагрузки
+      console.log('Payload from refresh token:', payload);
 
       const employee = await this.employeeService.findOne(payload.id);
       if (!employee?.is_active) {
@@ -100,7 +100,7 @@ export class AuthController {
 
       return this.authService.login(employee);
     } catch (error) {
-      console.error('Error verifying refresh token:', error); // Логирование ошибки
+      console.error('Error verifying refresh token:', error);
       throw new UnauthorizedException('Invalid refresh token');
     }
   }
