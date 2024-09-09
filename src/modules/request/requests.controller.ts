@@ -8,9 +8,17 @@ import {
   UnauthorizedException,
   HttpCode,
   Query,
+  Patch,
+  Param,
 } from '@nestjs/common';
 import { RequestsService } from './requests.service';
-import { CreateRequestDto, RequestResponseDto } from './request.dto';
+import {
+  CreateRequestDto,
+  RequestResponseDto,
+  RequestUpdate,
+  UpdateRequestDateDto,
+  UpdateRequestTypeDto,
+} from './request.dto';
 import { AuthGuard } from '@nestjs/passport';
 import {
   ApiBearerAuth,
@@ -111,6 +119,136 @@ export class RequestsController {
     } catch (error) {
       throw new DetailedInternalServerErrorException(
         'Error retrieving filtered requests',
+        error.message,
+      );
+    }
+  }
+
+  @Get(':id')
+  @ApiOperation({
+    summary: 'Get request by ID // Получить заявку по ID',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Request retrieved successfully.',
+    type: RequestResponseDto,
+  })
+  async getRequestById(@Param('id') id: number): Promise<RequestResponseDto> {
+    try {
+      const request = await this.requestsService.getRequestById(id);
+      return new RequestResponseDto(request);
+    } catch (error) {
+      throw new DetailedInternalServerErrorException(
+        'Error retrieving request by ID',
+        error.message,
+      );
+    }
+  }
+
+  @Patch(':id/type')
+  @ApiOperation({
+    summary: 'Update request type // Обновить тип заявки',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Request type updated successfully.',
+    type: RequestResponseDto,
+  })
+  async updateRequestType(
+    @Param('id') id: number,
+    @Body() updateRequestTypeDto: UpdateRequestTypeDto,
+  ): Promise<RequestResponseDto> {
+    try {
+      const updatedRequest = await this.requestsService.updateRequestType(
+        id,
+        updateRequestTypeDto,
+      );
+      return new RequestResponseDto(updatedRequest);
+    } catch (error) {
+      throw new DetailedInternalServerErrorException(
+        'Error updating request type',
+        error.message,
+      );
+    }
+  }
+
+  @Patch(':id/date')
+  @ApiOperation({
+    summary: 'Update request date // Обновить дату заявки',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Request date updated successfully.',
+    type: RequestResponseDto,
+  })
+  async updateRequestDate(
+    @Param('id') id: number,
+    @Body() updateRequestDateDto: UpdateRequestDateDto,
+  ): Promise<RequestResponseDto> {
+    try {
+      const updatedRequest = await this.requestsService.updateRequestDate(
+        id,
+        updateRequestDateDto,
+      );
+      return new RequestResponseDto(updatedRequest);
+    } catch (error) {
+      throw new DetailedInternalServerErrorException(
+        'Error updating request date',
+        error.message,
+      );
+    }
+  }
+
+  // Новый эндпоинт для отмены заявки
+  @Patch(':id/cancel')
+  @ApiOperation({
+    summary:
+      'Cancel request // Отменяем заявку. Добавляется автоматический комментарий "Заявка отменена сотрудником {Имя сотрудника}".',
+  })
+  async cancelRequest(@Param('id') requestId: number, @Req() req: Request) {
+    try {
+      const token = req.headers['authorization']?.split(' ')[1];
+      if (!token) {
+        throw new UnauthorizedException('Token is missing');
+      }
+      await this.requestsService.cancelRequest(requestId, token);
+      return { message: 'Request has been cancelled successfully' };
+    } catch (error) {
+      throw new DetailedInternalServerErrorException(
+        'Error cancelling request',
+        error.message,
+      );
+    }
+  }
+
+  @Patch(':id/update')
+  @ApiOperation({
+    summary: 'Update request // Изменить заявку',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Request updated successfully.',
+    type: RequestResponseDto,
+  })
+  async updateRequest(
+    @Param('id') id: number,
+    @Body() updateRequestDto: RequestUpdate,
+    @Req() req: Request,
+  ): Promise<RequestResponseDto> {
+    try {
+      const token = req.headers['authorization']?.split(' ')[1];
+      if (!token) {
+        throw new UnauthorizedException('Token is missing');
+      }
+      const updatedRequest = await this.requestsService.updateRequest(
+        id,
+        updateRequestDto,
+        token,
+      );
+      return new RequestResponseDto(updatedRequest);
+    } catch (error) {
+      throw new DetailedInternalServerErrorException(
+        'Error updating request',
         error.message,
       );
     }

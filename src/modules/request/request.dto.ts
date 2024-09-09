@@ -8,6 +8,23 @@ import {
 import { RequestType, RequestStatus, Requests } from './requests.entity';
 import { ApiProperty } from '@nestjs/swagger';
 
+export class UpdateRequestTypeDto {
+  @IsNotEmpty()
+  @IsEnum(RequestType)
+  new_type: RequestType;
+}
+
+export class UpdateRequestDateDto {
+  new_request_date: string;
+}
+export class RequestUpdate {
+  client_id?: string;
+  ep_id?: string;
+  description?: string;
+  address?: string;
+  client_contacts?: string;
+}
+
 export class CreateRequestDto {
   @ApiProperty({
     description: 'Внешний идентификатор заявки',

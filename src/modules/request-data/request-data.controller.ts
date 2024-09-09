@@ -9,6 +9,7 @@ import {
   Delete,
   Param,
   Patch,
+  NotFoundException,
 } from '@nestjs/common';
 import { Request } from 'express';
 import { RequestDataService } from './request-data.service';
@@ -27,8 +28,7 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { EmployeeRole } from '../employee/employee.entity';
-import { Roles } from 'src/common/decorators/roles.decorator';
+import { UserResponseDto } from '../employee/employee.dto';
 
 @ApiTags('Request-Data')
 @ApiBearerAuth()
@@ -41,7 +41,7 @@ export class RequestDataController {
   ) {}
 
   // Назначаем заявку
-  @Roles(EmployeeRole.Dispatcher)
+  //@Roles(EmployeeRole.Dispatcher)
   @Post('assign')
   @ApiOperation({
     summary:
@@ -100,8 +100,15 @@ export class RequestDataController {
   async removePerformer(
     @Param('requestId') requestId: number,
     @Param('performerId') performerId: number,
+    @Req() req: Request, // Добавляем запрос, чтобы можно было проверить токен
   ) {
     try {
+      // Извлечение токена из заголовка Authorization
+      const token = req.headers['authorization']?.split(' ')[1];
+      if (!token) {
+        throw new UnauthorizedException('Token is missing');
+      }
+
       await this.requestDataService.removePerformer(requestId, performerId);
       return { message: 'Performer removed successfully' };
     } catch (error) {
@@ -210,6 +217,128 @@ export class RequestDataController {
         'Error retrieving request data',
         error.message,
       );
+    }
+  }
+
+  // Получение общего списка исполнителей
+  @Get('employees')
+  @ApiOperation({
+    summary: 'Get all employees // Получить список всех сотрудников',
+  })
+  async getAllEmployees(@Req() req: Request): Promise<UserResponseDto[]> {
+    try {
+      const token = req.headers['authorization']?.split(' ')[1];
+      if (!token) {
+        throw new UnauthorizedException('Token is missing');
+      }
+      return await this.requestDataService.getAllEmployees();
+    } catch (error) {
+      throw new DetailedInternalServerErrorException(
+        'Error retrieving employees',
+        error.message,
+      );
+    }
+  }
+
+  // Получение назначенных на конкретную заявку исполнителей
+  @Get(':requestId/performers')
+  @ApiOperation({
+    summary:
+      'Get performers for request // Получить исполнителей для конкретной заявки',
+  })
+  async getPerformersForRequest(
+    @Param('requestId') requestId: number,
+    @Req() req: Request,
+  ): Promise<UserResponseDto[]> {
+    try {
+      const token = req.headers['authorization']?.split(' ')[1];
+      if (!token) {
+        throw new UnauthorizedException('Token is missing');
+      }
+      return await this.requestDataService.getPerformersForRequest(requestId);
+    } catch (error) {
+      throw new DetailedInternalServerErrorException(
+        'Error retrieving performers for request',
+        error.message,
+      );
+    }
+  }
+
+  // Получение списка всех заявок и соответствующих исполнителей
+  @Get('requests')
+  @ApiOperation({
+    summary:
+      'Get all requests and performers // Получить все заявки и соответствующих исполнителей',
+  })
+  async getRequestsAndPerformers(
+    @Req() req: Request,
+  ): Promise<RequestDataResponseDto[]> {
+    try {
+      const token = req.headers['authorization']?.split(' ')[1];
+      if (!token) {
+        throw new UnauthorizedException('Token is missing');
+      }
+      return await this.requestDataService.getRequestsAndPerformers();
+    } catch (error) {
+      throw new DetailedInternalServerErrorException(
+        'Error retrieving requests and performers',
+        error.message,
+      );
+    }
+  }
+
+  @Patch(':requestId/performer')
+  @ApiOperation({
+    summary: 'Assign or replace performer in a request',
+  })
+  async assignOrReplacePerformer(
+    @Param('requestId') requestId: number,
+    @Body() body: { newPerformerId: number; currentPerformerId?: number },
+    @Req() req: Request,
+  ) {
+    try {
+      // Извлечение токена из заголовка Authorization
+      const token = req.headers['authorization']?.split(' ')[1];
+      if (!token) {
+        throw new UnauthorizedException('Token is missing');
+      }
+
+      const { newPerformerId, currentPerformerId } = body;
+
+      if (currentPerformerId !== undefined) {
+        // Если currentPerformerId указан, выполняем переназначение
+        await this.requestDataService.replacePerformer(
+          requestId,
+          currentPerformerId,
+          newPerformerId,
+          token,
+        );
+      } else {
+        // Если currentPerformerId не указан, выполняем назначение
+        await this.requestDataService.assignRequest(
+          requestId,
+          newPerformerId,
+          token,
+        );
+      }
+
+      return { message: 'Performer assigned or replaced successfully' };
+    } catch (error) {
+      // Отправка детализированного сообщения об ошибке
+      if (error instanceof NotFoundException) {
+        throw new NotFoundException(
+          `Error assigning or replacing performer: ${error.message}`,
+        );
+      } else if (error instanceof UnauthorizedException) {
+        throw new UnauthorizedException(
+          `Error assigning or replacing performer: ${error.message}`,
+        );
+      } else {
+        throw new DetailedInternalServerErrorException(
+          'Error assigning or replacing performer',
+          error.message,
+        );
+      }
     }
   }
 }

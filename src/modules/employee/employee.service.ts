@@ -80,7 +80,6 @@ export class EmployeeService {
   }
 
   async findOne(id: number): Promise<Employee> {
-    console.log('Вызов метода findOne с id:', id);
     try {
       const employee = await this.employeeRepository.findOne({ where: { id } });
       if (!employee) {
@@ -157,7 +156,7 @@ export class EmployeeService {
         role: employee.role,
       }));
     } catch (error) {
-      console.error('Error in findByRoles:', error); // Логируем ошибку
+      console.error('Error in findByRoles:', error);
       throw new DetailedInternalServerErrorException(
         'Ошибка получения данных о сотрудниках.',
         error.message,

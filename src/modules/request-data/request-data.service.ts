@@ -1,6 +1,8 @@
 import {
+  ConflictException,
   ForbiddenException,
   Injectable,
+  NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
@@ -173,10 +175,13 @@ export class RequestDataService {
 
   // Удаление исполнителя из заявки
   async removePerformer(requestId: number, performerId: number): Promise<void> {
+    console.log(requestId, performerId);
     try {
       const request = await this.requestsRepository.findOne({
         where: { id: requestId },
       });
+
+      console.log(request);
 
       if (!request) {
         throw new UnauthorizedException('Request not found');
@@ -392,6 +397,156 @@ export class RequestDataService {
     } catch (error) {
       throw new DetailedInternalServerErrorException(
         'Error retrieving request data',
+        error.message,
+      );
+    }
+  }
+
+  // Получение общего списка исполнителей
+  async getAllEmployees(): Promise<UserResponseDto[]> {
+    try {
+      const employees = await this.employeeRepository.find();
+      return employees.map(this.transformEmployeeToDto);
+    } catch (error) {
+      throw new DetailedInternalServerErrorException(
+        'Error retrieving employees',
+        error.message,
+      );
+    }
+  }
+
+  // Получение назначенных на конкретную заявку исполнителей
+  async getPerformersForRequest(requestId: number): Promise<UserResponseDto[]> {
+    try {
+      const requestData = await this.requestDataRepository.find({
+        where: { request: { id: requestId } },
+        relations: ['performer_id'],
+      });
+
+      // Извлечение уникальных исполнителей
+      const performers = requestData.map((data) => data.performer_id);
+      return [
+        ...new Map(
+          performers.map((performer) => [performer.id, performer]),
+        ).values(),
+      ].map(this.transformEmployeeToDto);
+    } catch (error) {
+      throw new DetailedInternalServerErrorException(
+        'Error retrieving performers for request',
+        error.message,
+      );
+    }
+  }
+
+  // Получение списка всех заявок и соответствующих исполнителей
+  async getRequestsAndPerformers(): Promise<RequestDataResponseDto[]> {
+    try {
+      const requestData = await this.requestDataRepository.find({
+        relations: ['request', 'executor_id', 'performer_id'],
+      });
+      return requestData.map((data) => new RequestDataResponseDto(data));
+    } catch (error) {
+      throw new DetailedInternalServerErrorException(
+        'Error retrieving requests and performers',
+        error.message,
+      );
+    }
+  }
+
+  // Замена исполнителя в заявке
+  async replacePerformer(
+    requestId: number,
+    currentPerformerId: number,
+    newPerformerId: number,
+    token: string,
+  ): Promise<void> {
+    try {
+      // Находим заявку
+      const request = await this.requestsRepository.findOne({
+        where: { id: requestId },
+      });
+
+      if (!request) {
+        throw new NotFoundException('Request not found');
+      }
+
+      // Проверка статуса заявки
+      if (
+        [RequestStatus.CLOSED, RequestStatus.CANCELLED].includes(request.status)
+      ) {
+        throw new ForbiddenException(
+          'Request is closed or cancelled and cannot be modified',
+        );
+      }
+
+      // Находим запись текущего исполнителя
+      const currentAssignment = await this.requestDataRepository.findOne({
+        where: {
+          request: { id: requestId },
+          performer_id: { id: currentPerformerId },
+        },
+        relations: ['performer_id'],
+      });
+
+      if (!currentAssignment) {
+        throw new NotFoundException(
+          'Current performer not found for this request',
+        );
+      }
+
+      // Проверяем, существует ли новый исполнитель
+      const newPerformer = await this.employeeRepository.findOne({
+        where: { id: newPerformerId },
+      });
+
+      if (!newPerformer) {
+        throw new NotFoundException('New performer does not exist');
+      }
+
+      // Проверяем, не назначен ли уже новый исполнитель на эту заявку
+      const existingAssignment = await this.requestDataRepository.findOne({
+        where: {
+          request: { id: requestId },
+          performer_id: { id: newPerformerId },
+        },
+        relations: ['performer_id'],
+      });
+
+      if (existingAssignment) {
+        throw new ConflictException(
+          'This new performer is already assigned to the request',
+        );
+      }
+
+      // Обновляем текущего исполнителя на нового
+      currentAssignment.performer_id = newPerformer;
+
+      // Сохраняем изменения
+      await this.requestDataRepository.save(currentAssignment);
+    } catch (error) {
+      console.error('Error replacing performer:', error);
+      throw new NotFoundException(
+        'Error replacing performer',
+        error.message,
+      );
+    }
+  }
+
+  async getAssignmentByRequestIdAndPerformerId(
+    requestId: number,
+    performerId: number,
+  ): Promise<RequestData | null> {
+    try {
+      return await this.requestDataRepository.findOne({
+        where: {
+          request: { id: requestId },
+          performer_id: { id: performerId },
+        },
+        relations: ['performer_id'],
+      });
+    } catch (error) {
+      throw new DetailedInternalServerErrorException(
+        'Error retrieving assignment',
         error.message,
       );
     }
