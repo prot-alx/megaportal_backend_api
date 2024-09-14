@@ -167,7 +167,13 @@ export class RequestsService {
     }
   }
 
-  async findFiltered(status?: RequestStatus): Promise<RequestResponseDto[]> {
+  async findFiltered(
+    status?: RequestStatus,
+    startDate?: Date,
+    endDate?: Date,
+    page = 1,
+    limit = 50,
+  ): Promise<{ data: RequestResponseDto[]; totalPages: number; page: number }> {
     try {
       const queryBuilder =
         this.requestsRepository.createQueryBuilder('request');
@@ -176,11 +182,29 @@ export class RequestsService {
         queryBuilder.andWhere('request.status = :status', { status });
       }
 
-      const requests = await queryBuilder
-        .leftJoinAndSelect('request.hr_id', 'hr_id')
-        .getMany();
+      if (startDate) {
+        queryBuilder.andWhere('request.updated_at >= :startDate', {
+          startDate,
+        });
+      }
 
-      return requests.map((request) => new RequestResponseDto(request));
+      if (endDate) {
+        queryBuilder.andWhere('request.updated_at <= :endDate', { endDate });
+      }
+
+      queryBuilder.skip((page - 1) * limit).take(limit);
+
+      const [requests, totalRequests] = await queryBuilder
+        .leftJoinAndSelect('request.hr_id', 'hr_id')
+        .getManyAndCount();
+
+      const totalPages = Math.ceil(totalRequests / limit);
+
+      return {
+        data: requests.map((request) => new RequestResponseDto(request)),
+        totalPages,
+        page,
+      };
     } catch (error) {
       throw new DetailedInternalServerErrorException(
         'Error retrieving filtered requests',
@@ -208,8 +232,13 @@ export class RequestsService {
       console.log('Found request:', request);
 
       // Проверяем статус заявки: если CLOSED или CANCELLED, выбрасываем исключение
-      if (request.status === RequestStatus.CLOSED || request.status === RequestStatus.CANCELLED) {
-        throw new BadRequestException('Нельзя изменять дату для заявки со статусом CLOSED или CANCELLED.');
+      if (
+        request.status === RequestStatus.CLOSED ||
+        request.status === RequestStatus.CANCELLED
+      ) {
+        throw new BadRequestException(
+          'Нельзя изменять дату для заявки со статусом CLOSED или CANCELLED.',
+        );
       }
 
       console.log('Updating type to:', updateRequestTypeDto.new_type);
@@ -235,41 +264,46 @@ export class RequestsService {
     try {
       // Извлекаем новую дату из DTO
       const newRequestDate = updateRequestDateDto.new_request_date;
-  
+
       // Преобразуем строку в дату
       const requestDate = new Date(newRequestDate);
       if (isNaN(requestDate.getTime())) {
         throw new BadRequestException('Invalid request_date format');
       }
-  
+
       // Находим заявку по ID
       const request = await this.requestsRepository.findOne({
         where: { id },
         relations: ['hr_id'],
       });
-  
+
       if (!request) {
         throw new NotFoundException('Request not found');
       }
-  
+
       // Проверяем статус заявки: если CLOSED или CANCELLED, выбрасываем исключение
-      if (request.status === RequestStatus.CLOSED || request.status === RequestStatus.CANCELLED) {
-        throw new BadRequestException('Нельзя изменять дату для заявки со статусом CLOSED или CANCELLED.');
+      if (
+        request.status === RequestStatus.CLOSED ||
+        request.status === RequestStatus.CANCELLED
+      ) {
+        throw new BadRequestException(
+          'Нельзя изменять дату для заявки со статусом CLOSED или CANCELLED.',
+        );
       }
-  
+
       // Обновляем дату заявки
       request.request_date = requestDate;
-  
+
       // Сохраняем изменения
       const updatedRequest = await this.requestsRepository.save(request);
       return updatedRequest;
     } catch (error) {
       console.error('Error updating request date:', error);
       return Promise.reject(
-        error instanceof Error ? error : new Error(String(error))
+        error instanceof Error ? error : new Error(String(error)),
       );
     }
-  }  
+  }
 
   async cancelRequest(requestId: number, token: string): Promise<Requests> {
     try {
@@ -315,35 +349,44 @@ export class RequestsService {
     }
   }
 
-  async updateRequest(id: number, updateRequestDto: RequestUpdate, token: string): Promise<Requests> {
+  async updateRequest(
+    id: number,
+    updateRequestDto: RequestUpdate,
+    token: string,
+  ): Promise<Requests> {
     try {
       // Получаем ID текущего пользователя из токена
       const employeeId = this.extractUserIdFromToken(token);
-  
+
       // Находим сотрудника по ID
       const employee = await this.employeeRepository.findOne({
         where: { id: employeeId },
       });
-  
+
       if (!employee) {
         throw new NotFoundException('Сотрудник не найден.');
       }
-  
+
       // Находим заявку по ID с включением связи с сотрудником
       const request = await this.requestsRepository.findOne({
         where: { id },
         relations: ['hr_id'],
       });
-  
+
       if (!request) {
         throw new NotFoundException('Заявка не найдена.');
       }
-  
+
       // Проверяем статус заявки: если CLOSED или CANCELLED, выбрасываем исключение
-      if (request.status === RequestStatus.CLOSED || request.status === RequestStatus.CANCELLED) {
-        throw new BadRequestException('Нельзя изменять заявку со статусом CLOSED или CANCELLED.');
+      if (
+        request.status === RequestStatus.CLOSED ||
+        request.status === RequestStatus.CANCELLED
+      ) {
+        throw new BadRequestException(
+          'Нельзя изменять заявку со статусом CLOSED или CANCELLED.',
+        );
       }
-  
+
       // Обновляем поля заявки только если они переданы
       if (updateRequestDto.client_id) {
         request.client_id = updateRequestDto.client_id;
@@ -360,17 +403,17 @@ export class RequestsService {
       if (updateRequestDto.client_contacts) {
         request.client_contacts = updateRequestDto.client_contacts;
       }
-  
+
       // Связываем заявку с сотрудником HR, который обновляет её
       request.hr_id = employee;
-  
+
       // Сохраняем изменения в базе данных
       return await this.requestsRepository.save(request);
     } catch (error) {
       console.error('Error updating request:', error);
       return Promise.reject(
-        error instanceof Error ? error : new Error(String(error))
+        error instanceof Error ? error : new Error(String(error)),
       );
     }
-  }  
+  }
 }

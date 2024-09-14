@@ -25,6 +25,10 @@ export class RequestUpdate {
   client_contacts?: string;
 }
 
+export class RequestLastUpdateDto {
+  updated_at: string;
+}
+
 export class CreateRequestDto {
   @ApiProperty({
     description: 'Внешний идентификатор заявки',

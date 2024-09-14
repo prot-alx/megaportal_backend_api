@@ -306,7 +306,6 @@ export class RequestDataController {
       const { newPerformerId, currentPerformerId } = body;
 
       if (currentPerformerId !== undefined) {
-        // Если currentPerformerId указан, выполняем переназначение
         await this.requestDataService.replacePerformer(
           requestId,
           currentPerformerId,
@@ -314,7 +313,6 @@ export class RequestDataController {
           token,
         );
       } else {
-        // Если currentPerformerId не указан, выполняем назначение
         await this.requestDataService.assignRequest(
           requestId,
           newPerformerId,
@@ -324,7 +322,6 @@ export class RequestDataController {
 
       return { message: 'Performer assigned or replaced successfully' };
     } catch (error) {
-      // Отправка детализированного сообщения об ошибке
       if (error instanceof NotFoundException) {
         throw new NotFoundException(
           `Error assigning or replacing performer: ${error.message}`,

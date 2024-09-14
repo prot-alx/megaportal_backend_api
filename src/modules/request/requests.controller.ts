@@ -104,7 +104,7 @@ export class RequestsController {
   @Get('filtered')
   @ApiOperation({
     summary:
-      'Get filtered requests // Получить заявки с фильтрацией по статусу',
+      'Get filtered requests // Получить заявки с фильтрацией по статусу и опционально по дате обновления',
   })
   @ApiResponse({
     status: 200,
@@ -113,9 +113,22 @@ export class RequestsController {
   })
   async findFiltered(
     @Query('status') status?: RequestStatus,
-  ): Promise<RequestResponseDto[]> {
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+    @Query('page') page = 1,
+    @Query('limit') limit = 50,
+  ): Promise<{ data: RequestResponseDto[]; totalPages: number; page: number }> {
     try {
-      return await this.requestsService.findFiltered(status);
+      const start = startDate ? new Date(startDate) : undefined;
+      const end = endDate ? new Date(endDate) : undefined;
+
+      return await this.requestsService.findFiltered(
+        status,
+        start,
+        end,
+        page,
+        limit,
+      );
     } catch (error) {
       throw new DetailedInternalServerErrorException(
         'Error retrieving filtered requests',
