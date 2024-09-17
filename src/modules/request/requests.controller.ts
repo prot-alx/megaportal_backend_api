@@ -11,7 +11,7 @@ import {
   Patch,
   Param,
 } from '@nestjs/common';
-import { RequestsService } from './requests.service';
+import { FindFilteredParams, RequestsService } from './requests.service';
 import {
   CreateRequestDto,
   RequestResponseDto,
@@ -27,7 +27,6 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { DetailedInternalServerErrorException } from 'src/error/all-exceptions.filter';
-import { RequestStatus } from './requests.entity';
 
 @ApiTags('Request')
 @ApiBearerAuth()
@@ -103,8 +102,7 @@ export class RequestsController {
 
   @Get('filtered')
   @ApiOperation({
-    summary:
-      'Get filtered requests // Получить заявки с фильтрацией по статусу и опционально по дате обновления',
+    summary: 'Get filtered requests with status, date, and type filters',
   })
   @ApiResponse({
     status: 200,
@@ -112,23 +110,41 @@ export class RequestsController {
     type: [RequestResponseDto],
   })
   async findFiltered(
-    @Query('status') status?: RequestStatus,
-    @Query('startDate') startDate?: string,
-    @Query('endDate') endDate?: string,
+    @Query('filters') filters: string,
     @Query('page') page = 1,
-    @Query('limit') limit = 50,
+    @Query('limit') limit = 10,
   ): Promise<{ data: RequestResponseDto[]; totalPages: number; page: number }> {
     try {
-      const start = startDate ? new Date(startDate) : undefined;
-      const end = endDate ? new Date(endDate) : undefined;
+      // Парсим фильтры из строки запроса
+      const parsedFilters = JSON.parse(filters);
 
-      return await this.requestsService.findFiltered(
-        status,
-        start,
-        end,
+      // Преобразуем строки дат в объекты Date
+      const requestDateStart = parsedFilters.requestDateStart
+        ? new Date(parsedFilters.requestDateStart)
+        : undefined;
+      const requestDateEnd = parsedFilters.requestDateEnd
+        ? new Date(parsedFilters.requestDateEnd)
+        : undefined;
+      const updatedAtStart = parsedFilters.updatedAtStart
+        ? new Date(parsedFilters.updatedAtStart)
+        : undefined;
+      const updatedAtEnd = parsedFilters.updatedAtEnd
+        ? new Date(parsedFilters.updatedAtEnd)
+        : undefined;
+
+      // Оборачиваем параметры в один объект
+      const params: FindFilteredParams = {
+        status: parsedFilters.status,
+        type: parsedFilters.types,
+        requestDateStart,
+        requestDateEnd,
+        updatedAtStart,
+        updatedAtEnd,
         page,
         limit,
-      );
+      };
+
+      return await this.requestsService.findFiltered(params);
     } catch (error) {
       throw new DetailedInternalServerErrorException(
         'Error retrieving filtered requests',

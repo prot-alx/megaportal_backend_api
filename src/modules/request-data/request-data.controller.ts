@@ -10,6 +10,7 @@ import {
   Param,
   Patch,
   NotFoundException,
+  Query,
 } from '@nestjs/common';
 import { Request } from 'express';
 import { RequestDataService } from './request-data.service';
@@ -17,8 +18,10 @@ import { AuthGuard } from '@nestjs/passport';
 import { JwtService } from '@nestjs/jwt';
 import {
   ChangeRequestStatusDto,
+  CreateRequestDto,
   RequestDataDto,
   RequestDataResponseDto,
+  RequestFilterDto,
 } from './request-data.dto';
 import { DetailedInternalServerErrorException } from 'src/error/all-exceptions.filter';
 import { AddCommentDto } from '../request/request.dto';
@@ -28,7 +31,7 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { UserResponseDto } from '../employee/employee.dto';
+import { EmployeeDto } from '../employee/employee.dto';
 
 @ApiTags('Request-Data')
 @ApiBearerAuth()
@@ -39,6 +42,28 @@ export class RequestDataController {
     private readonly requestDataService: RequestDataService,
     private readonly jwtService: JwtService,
   ) {}
+
+  @Post()
+  @ApiOperation({ summary: 'Создать новую заявку' })
+  @ApiResponse({
+    status: 201,
+    description: 'Заявка успешно создана',
+    type: RequestDataResponseDto,
+  })
+  @ApiResponse({ status: 400, description: 'Неверные данные' })
+  async createRequest(
+    @Body() createRequestDto: CreateRequestDto,
+    @Req() req: Request,
+  ): Promise<{ message: string }> {
+    // Извлекаем токен из заголовков
+    const token = req.headers['authorization']?.split(' ')[1];
+
+    if (!token) {
+      throw new UnauthorizedException('Токен отсутствует');
+    }
+
+    return await this.requestDataService.create(createRequestDto, token);
+  }
 
   // Назначаем заявку
   //@Roles(EmployeeRole.Dispatcher)
@@ -225,7 +250,7 @@ export class RequestDataController {
   @ApiOperation({
     summary: 'Get all employees // Получить список всех сотрудников',
   })
-  async getAllEmployees(@Req() req: Request): Promise<UserResponseDto[]> {
+  async getAllEmployees(@Req() req: Request): Promise<EmployeeDto[]> {
     try {
       const token = req.headers['authorization']?.split(' ')[1];
       if (!token) {
@@ -249,7 +274,7 @@ export class RequestDataController {
   async getPerformersForRequest(
     @Param('requestId') requestId: number,
     @Req() req: Request,
-  ): Promise<UserResponseDto[]> {
+  ): Promise<EmployeeDto[]> {
     try {
       const token = req.headers['authorization']?.split(' ')[1];
       if (!token) {
@@ -336,6 +361,28 @@ export class RequestDataController {
           error.message,
         );
       }
+    }
+  }
+
+  @Get('filtered')
+  @ApiOperation({
+    summary: 'Получить все заявки с фильтрацией и пагинацией',
+  })
+  async getRequests(
+    @Query() filterDto: RequestFilterDto,
+    @Req() req: Request,
+  ): Promise<any> {
+    try {
+      const token = req.headers['authorization']?.split(' ')[1];
+      if (!token) {
+        throw new UnauthorizedException('Token is missing');
+      }
+      return await this.requestDataService.getRequestsWithFilters(filterDto);
+    } catch (error) {
+      throw new DetailedInternalServerErrorException(
+        'Error retrieving requests with filters',
+        error.message,
+      );
     }
   }
 }

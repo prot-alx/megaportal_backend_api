@@ -8,7 +8,7 @@ import { Repository } from 'typeorm';
 import { Employee, EmployeeRole } from './employee.entity';
 import {
   CreateEmployeeDto,
-  EmployeeSummaryDto,
+  EmployeeDto,
   UpdateEmployeeDto,
 } from './employee.dto';
 import * as bcrypt from 'bcrypt';
@@ -21,9 +21,30 @@ export class EmployeeService {
     private readonly employeeRepository: Repository<Employee>,
   ) {}
 
-  async findAll(): Promise<Employee[]> {
+  async findAll(filterDto: EmployeeDto): Promise<Employee[]> {
     try {
-      return await this.employeeRepository.find();
+      const queryBuilder =
+        this.employeeRepository.createQueryBuilder('employee');
+
+      // Фильтрация по ролям
+      if (filterDto.role) {
+        const rolesArray = filterDto.role.split(','); // Предполагаем, что roles передаются как строка через запятую
+        queryBuilder.andWhere('employee.role IN (:...roles)', {
+          roles: rolesArray,
+        });
+      }
+
+      // Фильтрация по активности
+      if (filterDto.is_active !== undefined) {
+        queryBuilder.andWhere('employee.is_active = :is_active', {
+          is_active: filterDto.is_active,
+        });
+      }
+
+      // Сортировка по имени
+      queryBuilder.orderBy('employee.name', 'ASC');
+
+      return await queryBuilder.getMany();
     } catch (error) {
       throw new DetailedInternalServerErrorException(
         'Ошибка получения данных о сотрудниках.',
@@ -94,6 +115,7 @@ export class EmployeeService {
       );
     }
   }
+
   async update(
     id: number,
     updateEmployeeDto: UpdateEmployeeDto,
@@ -138,15 +160,26 @@ export class EmployeeService {
     }
   }
 
-  // Метод для поиска активных сотрудников по ролям
-  async findByRoles(roles: EmployeeRole[]): Promise<EmployeeSummaryDto[]> {
+  // Метод для поиска сотрудников по ролям с учетом активности
+  async findByRoles(
+    roles: EmployeeRole[],
+    isActive: boolean | undefined,
+  ): Promise<EmployeeDto[]> {
     try {
       const queryBuilder =
         this.employeeRepository.createQueryBuilder('employee');
 
-      queryBuilder
-        .where('employee.role IN (:...roles)', { roles })
-        .andWhere('employee.is_active = :is_active', { is_active: true });
+      // Применяем фильтр по ролям, если roles не пуст
+      if (roles.length > 0) {
+        queryBuilder.where('employee.role IN (:...roles)', { roles });
+      }
+
+      // Применяем фильтр по активности, если isActive определен
+      if (isActive !== undefined) {
+        queryBuilder.andWhere('employee.is_active = :is_active', {
+          is_active: isActive,
+        });
+      }
 
       const employees = await queryBuilder.getMany();
 
@@ -154,9 +187,10 @@ export class EmployeeService {
         id: employee.id,
         name: employee.name,
         role: employee.role,
+        is_active: employee.is_active,
       }));
     } catch (error) {
-      console.error('Error in findByRoles:', error);
+      console.error('Error in findByRoles service method:', error); // Логируем ошибку в сервисе
       throw new DetailedInternalServerErrorException(
         'Ошибка получения данных о сотрудниках.',
         error.message,

@@ -13,7 +13,7 @@ import { EmployeeService } from './employee.service';
 import { Employee, EmployeeRole } from './employee.entity';
 import {
   CreateEmployeeDto,
-  EmployeeSummaryDto,
+  EmployeeDto,
   UpdateEmployeeDto,
 } from './employee.dto';
 import { AuthGuard } from '@nestjs/passport';
@@ -40,15 +40,16 @@ export class EmployeeController {
   @ApiResponse({
     status: 200,
     description: 'Список всех сотрудников',
-    type: [Employee],
+    type: [EmployeeDto],
   })
   @ApiResponse({
     status: 500,
     description: 'Ошибка при получении списка сотрудников',
   })
-  async findAll(): Promise<Employee[]> {
+  async findAll(@Query() filterDto: EmployeeDto): Promise<EmployeeDto[]> {
     try {
-      return await this.employeeService.findAll();
+      const employees = await this.employeeService.findAll(filterDto);
+      return employees.map((employee) => new EmployeeDto(employee));
     } catch (error) {
       throw new DetailedInternalServerErrorException(
         'Ошибка получения данных о сотрудниках.',
@@ -111,7 +112,9 @@ export class EmployeeController {
   }
 
   @Get('filtered')
-  @ApiOperation({ summary: 'Получить сотрудников по ролям' })
+  @ApiOperation({
+    summary: 'Получить сотрудников по ролям с учетом активности',
+  })
   @ApiQuery({
     name: 'roles',
     required: false,
@@ -119,25 +122,61 @@ export class EmployeeController {
     description: 'Роли сотрудников',
     type: String, // Убедитесь, что тип указан как String
   })
+  @ApiQuery({
+    name: 'is_active',
+    required: false,
+    description: 'Фильтр по активности сотрудников',
+    type: Boolean,
+  })
   @ApiResponse({
     status: 200,
-    description: 'Список сотрудников по ролям',
-    type: [EmployeeSummaryDto],
+    description: 'Список сотрудников по ролям и активности',
+    type: [EmployeeDto],
   })
   @ApiResponse({ status: 404, description: 'Сотрудники не найдены' })
   @ApiResponse({
     status: 500,
-    description: 'Ошибка при получении списка сотрудников по ролям',
+    description:
+      'Ошибка при получении списка сотрудников по ролям и активности',
   })
   async findByRoles(
-    @Query('roles') roles: string[], // Измените тип на string[]
-  ): Promise<EmployeeSummaryDto[]> {
+    @Query('roles') roles: string | string[], // roles может быть строкой или массивом строк
+    @Query('is_active') isActive: string | undefined, // Преобразуем в строку и далее в Boolean
+  ): Promise<EmployeeDto[]> {
     try {
-      // Преобразование строковых значений в перечисление EmployeeRole
-      const roleEnumValues: EmployeeRole[] = roles.map(
-        (role) => EmployeeRole[role as keyof typeof EmployeeRole],
+      // Преобразование roles в массив
+      let rolesArray: string[];
+      if (Array.isArray(roles)) {
+        rolesArray = roles;
+      } else if (roles) {
+        rolesArray = roles.split(',');
+      } else {
+        rolesArray = [];
+      }
+
+      // Преобразование строк в перечисление EmployeeRole
+      const roleEnumValues: EmployeeRole[] =
+        rolesArray.length > 0
+          ? rolesArray.map(
+              (role) => EmployeeRole[role as keyof typeof EmployeeRole],
+            )
+          : [];
+
+      // Преобразование is_active из строки в Boolean
+      let isActiveBoolean: boolean | undefined;
+      if (isActive === 'true') {
+        isActiveBoolean = true;
+      } else if (isActive === 'false') {
+        isActiveBoolean = false;
+      } else {
+        isActiveBoolean = undefined;
+      }
+
+      // Вызываем метод сервиса для поиска сотрудников
+      return await this.employeeService.findByRoles(
+        roleEnumValues,
+        isActiveBoolean,
       );
-      return await this.employeeService.findByRoles(roleEnumValues);
     } catch (error) {
       console.error('Error in findByRoles:', error); // Логируем ошибку
       throw new DetailedInternalServerErrorException(

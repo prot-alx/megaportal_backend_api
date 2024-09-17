@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   ForbiddenException,
   Injectable,
@@ -7,13 +8,30 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Not, Repository } from 'typeorm';
 import { RequestData } from './request-data.entity';
 import { Employee, EmployeeRole } from '../employee/employee.entity';
-import { Requests, RequestStatus } from '../request/requests.entity';
-import { UserResponseDto } from '../employee/employee.dto';
+import {
+  Requests,
+  RequestStatus,
+  RequestType,
+} from '../request/requests.entity';
+import { EmployeeDto } from '../employee/employee.dto';
 import { DetailedInternalServerErrorException } from 'src/error/all-exceptions.filter';
-import { RequestDataResponseDto } from './request-data.dto';
+import { CreateRequestDto, RequestDataResponseDto } from './request-data.dto';
+
+interface FilterOptions {
+  type?: RequestType;
+  status?: RequestStatus;
+  executor_id?: number;
+  performer_id?: number;
+  request_date_from?: Date;
+  request_date_to?: Date;
+  updated_at_from?: Date;
+  updated_at_to?: Date;
+  page?: number;
+  limit?: number;
+}
 
 @Injectable()
 export class RequestDataService {
@@ -87,10 +105,12 @@ export class RequestDataService {
   }
 
   // Преобразование сотрудника в DTO
-  private transformEmployeeToDto(employee: Employee): UserResponseDto {
+  private transformEmployeeToDto(employee: Employee): EmployeeDto {
     return {
       id: employee.id,
       name: employee.name,
+      role: employee.role,
+      is_active: employee.is_active,
     };
   }
 
@@ -105,28 +125,236 @@ export class RequestDataService {
     return employee.name;
   }
 
+  async getRequestsWithFilters(filters: FilterOptions) {
+    const {
+      type,
+      status,
+      executor_id,
+      performer_id,
+      request_date_from,
+      request_date_to,
+      updated_at_from,
+      updated_at_to,
+      page = 1,
+      limit = 10,
+    } = filters;
+
+    const queryBuilder = this.requestDataRepository
+      .createQueryBuilder('request_data')
+      .leftJoinAndSelect('request_data.request', 'request')
+      .leftJoinAndSelect('request_data.executor_id', 'executor')
+      .leftJoinAndSelect('request_data.performer_id', 'performer')
+      .leftJoinAndSelect('request.hr_id', 'hr');
+
+    // Фильтрация по полям
+    if (request_date_from)
+      queryBuilder.andWhere('request.request_date >= :request_date_from', {
+        request_date_from,
+      });
+    if (request_date_to)
+      queryBuilder.andWhere('request.request_date <= :request_date_to', {
+        request_date_to,
+      });
+
+    if (status) queryBuilder.andWhere('request.status = :status', { status });
+
+    if (type) queryBuilder.andWhere('request.type = :type', { type });
+
+    if (executor_id)
+      queryBuilder.andWhere('request_data.executor_id = :executor_id', {
+        executor_id,
+      });
+
+    if (performer_id)
+      queryBuilder.andWhere('request_data.performer_id = :performer_id', {
+        performer_id,
+      });
+
+    if (updated_at_from)
+      queryBuilder.andWhere('request.updated_at >= :updated_at_from', {
+        updated_at_from,
+      });
+
+    if (updated_at_to)
+      queryBuilder.andWhere('request.updated_at <= :updated_at_to', {
+        updated_at_to,
+      });
+
+    queryBuilder.orderBy('request.id', 'DESC');
+    
+    const totalRequests = await queryBuilder.getCount();
+    const requests = await queryBuilder
+      .skip((page - 1) * limit)
+      .take(limit)
+      .getMany();
+
+    // Формирование ответа с ограниченной информацией о сотрудниках
+    const formattedRequests = requests.map((requestData) => {
+      return {
+        id: requestData.id,
+        request: {
+          id: requestData.request.id,
+          type: requestData.request.type,
+          ep_id: requestData.request.ep_id,
+          client: requestData.request.client_id,
+          contacts: requestData.request.client_contacts,
+          description: requestData.request.description,
+          address: requestData.request.address,
+          comment: requestData.request.comment,
+          status: requestData.request.status,
+          request_date: requestData.request.request_date,
+          request_updated_at: requestData.request.updated_at,
+          request_created_at: requestData.request.created_at,
+          hr: requestData.request.hr_id
+            ? {
+                id: requestData.request.hr_id.id,
+                name: requestData.request.hr_id.name,
+                role: requestData.request.hr_id.role,
+                is_active: requestData.request.hr_id.is_active,
+              }
+            : null,
+        },
+        executor: requestData.executor_id
+          ? {
+              id: requestData.executor_id.id,
+              name: requestData.executor_id.name,
+              role: requestData.executor_id.role,
+              is_active: requestData.executor_id.is_active,
+            }
+          : null,
+        performer: requestData.performer_id
+          ? {
+              id: requestData.performer_id.id,
+              name: requestData.performer_id.name,
+              role: requestData.performer_id.role,
+              is_active: requestData.performer_id.is_active,
+            }
+          : null,
+      };
+    });
+
+    return {
+      totalPages: Math.ceil(totalRequests / limit),
+      currentPage: page,
+      limit,
+      totalRequests,
+      requests: formattedRequests,
+    };
+  }
+
+  // Создать заявку
+  async create(
+    createRequestDto: CreateRequestDto,
+    token: string,
+  ): Promise<{ message: string }> {
+    try {
+      // Получаем ID текущего пользователя из токена
+      const employeeId = this.extractUserIdFromToken(token);
+
+      // Находим сотрудника по ID
+      const employee = await this.employeeRepository.findOne({
+        where: { id: employeeId },
+      });
+
+      if (!employee) {
+        throw new NotFoundException('Сотрудник не найден.');
+      }
+
+      // Проверяем, есть ли активные заявки для этого клиента
+      const existingRequest = await this.requestsRepository.findOne({
+        where: {
+          client_id: createRequestDto.client_id,
+          status: Not(RequestStatus.CLOSED), // Проверяем статус, отличный от 'CLOSED'
+        },
+      });
+
+      if (existingRequest) {
+        throw new BadRequestException(
+          `An active request for this client already exists with status: ${existingRequest.status}. You cannot create a new request until the previous one is closed.`,
+        );
+      }
+
+      // Преобразуем строку в дату
+      const requestDate = new Date(createRequestDto.request_date);
+      if (isNaN(requestDate.getTime())) {
+        throw new BadRequestException('Invalid request_date format');
+      }
+
+      // Создаем заявку
+      const request = this.requestsRepository.create({
+        ...createRequestDto,
+        created_at: new Date(),
+        updated_at: new Date(),
+        hr_id: employee,
+        request_date: requestDate,
+        status: createRequestDto.status || RequestStatus.NEW,
+      });
+
+      // Сохраняем заявку в базе данных
+      const savedRequest = await this.requestsRepository.save(request);
+
+      // Создаем запись в request_data
+      const requestData = this.requestDataRepository.create({
+        request: savedRequest,
+        executor_id: null,
+        performer_id: null,
+        created_at: new Date(),
+        updated_at: new Date(),
+      });
+
+      await this.requestDataRepository.save(requestData);
+
+      return { message: 'Заявка успешно создана' };
+    } catch (error) {
+      throw new DetailedInternalServerErrorException(
+        'Error creating request',
+        error.message,
+      );
+    }
+  }
+
   // Назначение заявки исполнителю
   async assignRequest(
     requestId: number,
-    performerId: number,
+    performerId: number | null,
     token: string,
   ): Promise<RequestData> {
     try {
       const executorId = this.extractUserIdFromToken(token);
 
-      // Находим сущности заявок и сотрудников
-      const request = await this.requestsRepository.findOne({
-        where: { id: requestId },
+      // Находим запись в request_data по requestId
+      const existingRequestData = await this.requestDataRepository.findOne({
+        where: { request: { id: requestId } },
+        relations: ['request'],
       });
+
+      if (!existingRequestData) {
+        throw new NotFoundException('Request not found in request_data');
+      }
+
+      // Получаем связанную заявку
+      const request = existingRequestData.request;
+
+      // Находим сотрудника, который назначает
       const executor = await this.employeeRepository.findOne({
         where: { id: executorId },
       });
-      const performer = await this.employeeRepository.findOne({
-        where: { id: performerId },
-      });
 
-      if (!request || !executor || !performer) {
-        throw new UnauthorizedException('Request or Сотрудник не найден.');
+      // Если исполнитель указан, проверяем его существование
+      if (!executor) {
+        throw new NotFoundException('Executor not found');
+      }
+
+      // Если performerId указан, находим перформера
+      let performer = null;
+      if (performerId) {
+        performer = await this.employeeRepository.findOne({
+          where: { id: performerId },
+        });
+
+        if (!performer) {
+          throw new NotFoundException('Performer not found');
+        }
       }
 
       // Проверяем статус заявки
@@ -138,33 +366,27 @@ export class RequestDataService {
         );
       }
 
-      // Проверяем, не назначен ли уже этот сотрудник на эту заявку
-      const existingAssignment = await this.requestDataRepository.findOne({
-        where: {
-          request: { id: requestId },
-          performer_id: { id: performerId },
-        },
-      });
+      // Если заявка уже имеет исполнителя, дублируем запись
+      if (existingRequestData.performer_id) {
+        // Создаем новую запись с тем же request_id и новым performer_id
+        const newRequestData = this.requestDataRepository.create({
+          request,
+          executor_id: executor,
+          performer_id: performer || null,
+          updated_at: new Date(),
+        });
 
-      if (existingAssignment) {
-        throw new UnauthorizedException(
-          'This performer is already assigned to the request',
-        );
-      }
-
-      // Изменяем статус заявки на IN_PROGRESS, если он сейчас NEW
-      if (request.status === RequestStatus.NEW) {
+        return await this.requestDataRepository.save(newRequestData);
+      } else {
+        // Обновляем существующую запись
+        existingRequestData.executor_id = executor;
+        existingRequestData.performer_id = performer || null;
+        existingRequestData.updated_at = new Date();
         request.status = RequestStatus.IN_PROGRESS;
         await this.requestsRepository.save(request);
+
+        return await this.requestDataRepository.save(existingRequestData);
       }
-
-      const requestData = this.requestDataRepository.create({
-        request,
-        executor_id: executor,
-        performer_id: performer,
-      });
-
-      return await this.requestDataRepository.save(requestData);
     } catch (error) {
       throw new DetailedInternalServerErrorException(
         'Error assigning request',
@@ -174,11 +396,14 @@ export class RequestDataService {
   }
 
   // Удаление исполнителя из заявки
-  async removePerformer(requestId: number, performerId: number): Promise<void> {
-    console.log(requestId, performerId);
+  async removePerformer(
+    request_id: number,
+    performer_id: number,
+  ): Promise<void> {
+    console.log(request_id, performer_id);
     try {
       const request = await this.requestsRepository.findOne({
-        where: { id: requestId },
+        where: { id: request_id },
       });
 
       console.log(request);
@@ -196,19 +421,26 @@ export class RequestDataService {
         );
       }
 
-      // Удаляем исполнителя
-      const deleteResult = await this.requestDataRepository.delete({
-        request: { id: requestId },
-        performer_id: { id: performerId },
-      });
+      // Обновляем performer_id и executor_id на null
+      const updateResult = await this.requestDataRepository.update(
+        {
+          request: { id: request_id },
+          performer_id: { id: performer_id },
+        },
+        {
+          performer_id: null,
+          executor_id: null,
+          updated_at: new Date(),
+        },
+      );
 
-      if (deleteResult.affected === 0) {
+      if (updateResult.affected === 0) {
         throw new UnauthorizedException('Performer not found for this request');
       }
 
       // Проверяем, остались ли еще исполнители для этой заявки
       const remainingPerformers = await this.requestDataRepository.count({
-        where: { request: { id: requestId } },
+        where: { request: { id: request_id }, performer_id: Not(null) },
       });
 
       // Если исполнителей не осталось, меняем статус на NEW
@@ -217,9 +449,8 @@ export class RequestDataService {
         await this.requestsRepository.save(request);
       }
     } catch (error) {
-      throw new DetailedInternalServerErrorException(
-        'Error removing performer',
-        error.message,
+      return Promise.reject(
+        error instanceof Error ? error : new Error(String(error)),
       );
     }
   }
@@ -391,7 +622,7 @@ export class RequestDataService {
   async findAll(): Promise<RequestDataResponseDto[]> {
     try {
       const requestData = await this.requestDataRepository.find({
-        relations: ['request', 'executor_id', 'performer_id'],
+        relations: ['request', 'request.hr_id', 'executor_id', 'performer_id'],
       });
       return requestData.map((data) => new RequestDataResponseDto(data));
     } catch (error) {
@@ -403,7 +634,7 @@ export class RequestDataService {
   }
 
   // Получение общего списка исполнителей
-  async getAllEmployees(): Promise<UserResponseDto[]> {
+  async getAllEmployees(): Promise<EmployeeDto[]> {
     try {
       const employees = await this.employeeRepository.find();
       return employees.map(this.transformEmployeeToDto);
@@ -416,7 +647,7 @@ export class RequestDataService {
   }
 
   // Получение назначенных на конкретную заявку исполнителей
-  async getPerformersForRequest(requestId: number): Promise<UserResponseDto[]> {
+  async getPerformersForRequest(requestId: number): Promise<EmployeeDto[]> {
     try {
       const requestData = await this.requestDataRepository.find({
         where: { request: { id: requestId } },
@@ -525,10 +756,7 @@ export class RequestDataService {
       await this.requestDataRepository.save(currentAssignment);
     } catch (error) {
       console.error('Error replacing performer:', error);
-      throw new NotFoundException(
-        'Error replacing performer',
-        error.message,
-      );
+      throw new NotFoundException('Error replacing performer', error.message);
     }
   }
 

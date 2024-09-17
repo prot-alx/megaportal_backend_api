@@ -1,4 +1,9 @@
-import { IsString, IsOptional, IsEnum, IsBoolean, IsNumber } from 'class-validator';
+import {
+  IsString,
+  IsOptional,
+  IsEnum,
+  IsBoolean,
+} from 'class-validator';
 import { EmployeeRole } from './employee.entity';
 import { ApiProperty } from '@nestjs/swagger';
 
@@ -81,36 +86,21 @@ export class UpdateEmployeeDto {
   is_active?: boolean;
 }
 
-export class UserResponseDto {
-  @ApiProperty({
-    description: 'ID пользователя',
-    example: '1',
-  })
-  @IsNumber()
+export class EmployeeDto {
+  @ApiProperty({ description: 'ID сотрудника', example: 6 })
   id: number;
 
-  @ApiProperty({
-    description: 'Имя пользователя',
-    example: 'John Doe',
-    required: false,
-  })
-  @IsOptional()
-  @IsString()
-  name?: string;
+  @ApiProperty({ description: 'Имя сотрудника', example: 'диспетчер 2' })
+  name: string;
+
+  @ApiProperty({ description: 'Роль сотрудника', example: 'Dispatcher' })
+  role: string;
+
+  @ApiProperty({ description: 'Статус активности сотрудника', example: true })
+  is_active: boolean;
+
+  constructor(partial: Partial<EmployeeDto>) {
+    Object.assign(this, partial);
+  }
 }
 
-export class EmployeeSummaryDto {
-  @ApiProperty({ description: 'ID сотрудника' })
-  @IsNumber()
-  id: number;
-
-  @ApiProperty({ description: 'Имя сотрудника' })
-  @IsOptional()
-  @IsString()
-  name?: string;
-
-  @ApiProperty({ description: 'Роль сотрудника' })
-  @IsOptional()
-  @IsEnum(EmployeeRole)
-  role?: string;
-}

@@ -5,7 +5,7 @@ import {
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
-import { Requests, RequestStatus } from './requests.entity';
+import { Requests, RequestStatus, RequestType } from './requests.entity';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Not, Repository } from 'typeorm';
@@ -17,8 +17,19 @@ import {
   UpdateRequestDateDto,
   UpdateRequestTypeDto,
 } from './request.dto';
-import { UserResponseDto } from '../employee/employee.dto';
+import { EmployeeDto } from '../employee/employee.dto';
 import { DetailedInternalServerErrorException } from 'src/error/all-exceptions.filter';
+
+export interface FindFilteredParams {
+  status?: RequestStatus;
+  type?: RequestType[];
+  requestDateStart?: Date;
+  requestDateEnd?: Date;
+  updatedAtStart?: Date;
+  updatedAtEnd?: Date;
+  page?: number;
+  limit?: number;
+}
 
 @Injectable()
 export class RequestsService {
@@ -45,10 +56,12 @@ export class RequestsService {
     }
   }
 
-  private transformEmployeeToDto(employee: Employee): UserResponseDto {
+  private transformEmployeeToDto(employee: Employee): EmployeeDto {
     return {
       id: employee.id,
       name: employee.name,
+      role: employee.role,
+      is_active: employee.is_active,
     };
   }
 
@@ -73,7 +86,7 @@ export class RequestsService {
       const existingRequest = await this.requestsRepository.findOne({
         where: {
           client_id: createRequestDto.client_id,
-          status: Not(RequestStatus.CLOSED), // Проверяем статус, отличный от 'CLOSED'
+          status: Not(RequestStatus.CLOSED),
         },
       });
 
@@ -93,6 +106,8 @@ export class RequestsService {
       const request = this.requestsRepository.create({
         ...createRequestDto,
         hr_id: employee,
+        created_at: new Date(),
+        updated_at: new Date(),
         request_date: requestDate,
         // status: createRequestDto.status || RequestStatus.NEW,
       });
@@ -131,7 +146,7 @@ export class RequestsService {
     }
   }
 
-  async getCurrentUser(token: string): Promise<UserResponseDto> {
+  async getCurrentUser(token: string): Promise<EmployeeDto> {
     try {
       const employeeId = this.extractUserIdFromToken(token);
 
@@ -168,13 +183,20 @@ export class RequestsService {
   }
 
   async findFiltered(
-    status?: RequestStatus,
-    startDate?: Date,
-    endDate?: Date,
-    page = 1,
-    limit = 50,
+    params: FindFilteredParams,
   ): Promise<{ data: RequestResponseDto[]; totalPages: number; page: number }> {
     try {
+      const {
+        status,
+        type,
+        requestDateStart,
+        requestDateEnd,
+        updatedAtStart,
+        updatedAtEnd,
+        page = 1,
+        limit = 10,
+      } = params;
+
       const queryBuilder =
         this.requestsRepository.createQueryBuilder('request');
 
@@ -182,16 +204,36 @@ export class RequestsService {
         queryBuilder.andWhere('request.status = :status', { status });
       }
 
-      if (startDate) {
-        queryBuilder.andWhere('request.updated_at >= :startDate', {
-          startDate,
+      if (type && type.length > 0) {
+        queryBuilder.andWhere('request.type IN (:...types)', { types: type });
+      }
+
+      if (requestDateStart) {
+        queryBuilder.andWhere('request.request_date >= :requestDateStart', {
+          requestDateStart,
         });
       }
 
-      if (endDate) {
-        queryBuilder.andWhere('request.updated_at <= :endDate', { endDate });
+      if (requestDateEnd) {
+        queryBuilder.andWhere('request.request_date <= :requestDateEnd', {
+          requestDateEnd,
+        });
       }
 
+      if (updatedAtStart) {
+        queryBuilder.andWhere('request.updated_at >= :updatedAtStart', {
+          updatedAtStart,
+        });
+      }
+
+      if (updatedAtEnd) {
+        queryBuilder.andWhere('request.updated_at <= :updatedAtEnd', {
+          updatedAtEnd,
+        });
+      }
+
+          // Добавляем сортировку по created_at
+      queryBuilder.orderBy('request.created_at', 'DESC');
       queryBuilder.skip((page - 1) * limit).take(limit);
 
       const [requests, totalRequests] = await queryBuilder
@@ -217,8 +259,6 @@ export class RequestsService {
     id: number,
     updateRequestTypeDto: UpdateRequestTypeDto,
   ): Promise<Requests> {
-    console.log('Updating request with ID:', id);
-    console.log(updateRequestTypeDto);
     try {
       const request = await this.requestsRepository.findOne({
         where: { id },
@@ -228,8 +268,6 @@ export class RequestsService {
       if (!request) {
         throw new NotFoundException('Request not found');
       }
-
-      console.log('Found request:', request);
 
       // Проверяем статус заявки: если CLOSED или CANCELLED, выбрасываем исключение
       if (
@@ -241,11 +279,9 @@ export class RequestsService {
         );
       }
 
-      console.log('Updating type to:', updateRequestTypeDto.new_type);
       request.type = updateRequestTypeDto.new_type;
 
       const updatedRequest = await this.requestsRepository.save(request);
-      console.log('Updated request:', updatedRequest);
 
       return updatedRequest;
     } catch (error) {
