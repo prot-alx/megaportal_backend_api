@@ -1,4 +1,4 @@
-import {
+import {  
   IsDate,
   IsDateString,
   IsEnum,
@@ -317,8 +317,8 @@ export class FilterOptionsDto {
 
 export class  RequestFilterDto {
   @IsOptional()
-  @IsEnum(RequestType)
-  type?: RequestType;
+  @IsEnum(RequestType, { each: true })
+  type?: RequestType[];
 
   @IsOptional()
   @IsEnum(RequestStatus)

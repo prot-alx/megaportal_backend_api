@@ -21,7 +21,7 @@ import { DetailedInternalServerErrorException } from 'src/error/all-exceptions.f
 import { CreateRequestDto, RequestDataResponseDto } from './request-data.dto';
 
 interface FilterOptions {
-  type?: RequestType;
+  type?: RequestType[];
   status?: RequestStatus;
   executor_id?: number;
   performer_id?: number;
@@ -127,7 +127,7 @@ export class RequestDataService {
 
   async getRequestsWithFilters(filters: FilterOptions) {
     const {
-      type,
+      type: typeStrings,
       status,
       executor_id,
       performer_id,
@@ -158,7 +158,26 @@ export class RequestDataService {
 
     if (status) queryBuilder.andWhere('request.status = :status', { status });
 
-    if (type) queryBuilder.andWhere('request.type = :type', { type });
+    // Преобразование строки или массива в RequestType[]
+    let types: RequestType[] | undefined;
+    if (typeStrings) {
+      // Убедитесь, что typeStrings всегда массив
+      const typeArray = Array.isArray(typeStrings)
+        ? typeStrings
+        : [typeStrings];
+
+      types = typeArray.map((typeString) => {
+        if (Object.values(RequestType).includes(typeString)) {
+          return typeString;
+        } else {
+          throw new BadRequestException(`Invalid request type: ${typeString}`);
+        }
+      });
+    }
+
+    if (types && types.length > 0) {
+      queryBuilder.andWhere('request.type IN (:...types)', { types });
+    }
 
     if (executor_id)
       queryBuilder.andWhere('request_data.executor_id = :executor_id', {
@@ -180,8 +199,15 @@ export class RequestDataService {
         updated_at_to,
       });
 
-    queryBuilder.orderBy('request.id', 'DESC');
-    
+    // Условная сортировка по статусу
+    if (status === 'NEW') {
+      queryBuilder.orderBy('request.id', 'DESC');
+    } else if (['IN_PROGRESS', 'MONITORING', 'POSTPONED'].includes(status)) {
+      queryBuilder.orderBy('performer.name', 'ASC');
+    } else if (['CLOSED', 'CANCELLED'].includes(status)) {
+      queryBuilder.orderBy('request.updated_at', 'DESC');
+    }
+
     const totalRequests = await queryBuilder.getCount();
     const requests = await queryBuilder
       .skip((page - 1) * limit)
@@ -400,13 +426,10 @@ export class RequestDataService {
     request_id: number,
     performer_id: number,
   ): Promise<void> {
-    console.log(request_id, performer_id);
     try {
       const request = await this.requestsRepository.findOne({
         where: { id: request_id },
       });
-
-      console.log(request);
 
       if (!request) {
         throw new UnauthorizedException('Request not found');
@@ -563,7 +586,7 @@ export class RequestDataService {
         throw new UnauthorizedException('Request not found');
       }
 
-      const allowedRoles = [EmployeeRole.Dispatcher, EmployeeRole.Performer];
+      const allowedRoles = [EmployeeRole.Dispatcher, EmployeeRole.Performer, EmployeeRole.Storekeeper];
       await this.validateAccess(request, userId, allowedRoles);
 
       const employee = await this.employeeRepository.findOne({
