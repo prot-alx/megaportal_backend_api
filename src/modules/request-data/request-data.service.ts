@@ -22,7 +22,7 @@ import { CreateRequestDto, RequestDataResponseDto } from './request-data.dto';
 
 interface FilterOptions {
   type?: RequestType[];
-  status?: RequestStatus;
+  status?: RequestStatus[];
   executor_id?: number;
   performer_id?: number;
   request_date_from?: Date;
@@ -125,10 +125,11 @@ export class RequestDataService {
     return employee.name;
   }
 
+  // Получение заявок с фильтрацией
   async getRequestsWithFilters(filters: FilterOptions) {
     const {
       type: typeStrings,
-      status,
+      status: statusStrings,
       executor_id,
       performer_id,
       request_date_from,
@@ -139,14 +140,68 @@ export class RequestDataService {
       limit = 10,
     } = filters;
 
-    const queryBuilder = this.requestDataRepository
+    const queryBuilder = this.initializeQueryBuilder();
+
+    this.applyDateFilters(queryBuilder, { request_date_from, request_date_to });
+    this.applyTypeFilter(queryBuilder, typeStrings);
+    this.applyStatusFilter(queryBuilder, statusStrings);
+    this.applyExecutorFilter(queryBuilder, executor_id);
+    this.applyPerformerFilter(queryBuilder, performer_id);
+    this.applyUpdateAtFilters(queryBuilder, { updated_at_from, updated_at_to });
+
+    // Применяем сортировку
+    this.applySorting(queryBuilder, statusStrings);
+
+    const totalRequests = await queryBuilder.getCount();
+    const requests = await queryBuilder
+      .skip((page - 1) * limit)
+      .take(limit)
+      .getMany();
+
+    const formattedRequests = this.formatRequests(requests);
+
+    return this.buildResponse(formattedRequests, totalRequests, page, limit);
+  }
+
+  private applySorting(queryBuilder, statusStrings) {
+    if (!statusStrings) return;
+
+    const statuses = this.mapToValidStatuses(statusStrings);
+
+    const isClosedAndCancelled =
+      statuses.includes(RequestStatus.CLOSED) &&
+      statuses.includes(RequestStatus.CANCELLED);
+
+    if (isClosedAndCancelled) {
+      queryBuilder.orderBy('performer.name', 'ASC');
+    } else if (statuses.includes(RequestStatus.NEW)) {
+      queryBuilder.orderBy('request.created_at', 'DESC');
+    } else if (
+      statuses.includes(RequestStatus.IN_PROGRESS) ||
+      statuses.includes(RequestStatus.MONITORING) ||
+      statuses.includes(RequestStatus.POSTPONED)
+    ) {
+      queryBuilder.orderBy('performer.name', 'ASC');
+    } else if (statuses.includes(RequestStatus.SUCCESS)) {
+      queryBuilder.orderBy('request.updated_at', 'DESC');
+    } else if (statuses.includes(RequestStatus.CLOSED)) {
+      queryBuilder.orderBy('request.updated_at', 'DESC');
+    } else if (statuses.includes(RequestStatus.CANCELLED)) {
+      queryBuilder.orderBy('performer.name', 'ASC');
+    }
+  }
+
+  private initializeQueryBuilder() {
+    return this.requestDataRepository
       .createQueryBuilder('request_data')
       .leftJoinAndSelect('request_data.request', 'request')
       .leftJoinAndSelect('request_data.executor_id', 'executor')
       .leftJoinAndSelect('request_data.performer_id', 'performer')
       .leftJoinAndSelect('request.hr_id', 'hr');
+  }
 
-    // Фильтрация по полям
+  private applyDateFilters(queryBuilder, dates) {
+    const { request_date_from, request_date_to } = dates;
     if (request_date_from)
       queryBuilder.andWhere('request.request_date >= :request_date_from', {
         request_date_from,
@@ -155,67 +210,76 @@ export class RequestDataService {
       queryBuilder.andWhere('request.request_date <= :request_date_to', {
         request_date_to,
       });
+  }
 
-    if (status) queryBuilder.andWhere('request.status = :status', { status });
-
-    // Преобразование строки или массива в RequestType[]
-    let types: RequestType[] | undefined;
-    if (typeStrings) {
-      // Убедитесь, что typeStrings всегда массив
-      const typeArray = Array.isArray(typeStrings)
-        ? typeStrings
-        : [typeStrings];
-
-      types = typeArray.map((typeString) => {
-        if (Object.values(RequestType).includes(typeString)) {
-          return typeString;
-        } else {
-          throw new BadRequestException(`Invalid request type: ${typeString}`);
-        }
-      });
-    }
-
+  private applyTypeFilter(queryBuilder, typeStrings) {
+    if (!typeStrings) return;
+    const types = this.mapToValidTypes(typeStrings);
     if (types && types.length > 0) {
       queryBuilder.andWhere('request.type IN (:...types)', { types });
     }
+  }
 
+  private mapToValidTypes(typeStrings): RequestType[] {
+    const typeArray = Array.isArray(typeStrings) ? typeStrings : [typeStrings];
+    return typeArray.map((typeString) => {
+      if (!Object.values(RequestType).includes(typeString)) {
+        throw new BadRequestException(`Invalid request type: ${typeString}`);
+      }
+      return typeString;
+    });
+  }
+
+  private applyStatusFilter(queryBuilder, statusStrings) {
+    if (!statusStrings) return;
+    const statuses = this.mapToValidStatuses(statusStrings);
+    if (statuses && statuses.length > 0) {
+      queryBuilder.andWhere('request.status IN (:...statuses)', { statuses });
+    }
+  }
+
+  private mapToValidStatuses(statusStrings): RequestStatus[] {
+    const statusArray = Array.isArray(statusStrings)
+      ? statusStrings
+      : [statusStrings];
+    return statusArray.map((statusString) => {
+      if (!Object.values(RequestStatus).includes(statusString)) {
+        throw new BadRequestException(
+          `Invalid request status: ${statusString}`,
+        );
+      }
+      return statusString;
+    });
+  }
+
+  private applyExecutorFilter(queryBuilder, executor_id) {
     if (executor_id)
       queryBuilder.andWhere('request_data.executor_id = :executor_id', {
         executor_id,
       });
+  }
 
+  private applyPerformerFilter(queryBuilder, performer_id) {
     if (performer_id)
       queryBuilder.andWhere('request_data.performer_id = :performer_id', {
         performer_id,
       });
+  }
 
+  private applyUpdateAtFilters(queryBuilder, dates) {
+    const { updated_at_from, updated_at_to } = dates;
     if (updated_at_from)
       queryBuilder.andWhere('request.updated_at >= :updated_at_from', {
         updated_at_from,
       });
-
     if (updated_at_to)
       queryBuilder.andWhere('request.updated_at <= :updated_at_to', {
         updated_at_to,
       });
+  }
 
-    // Условная сортировка по статусу
-    if (status === 'NEW') {
-      queryBuilder.orderBy('request.id', 'DESC');
-    } else if (['IN_PROGRESS', 'MONITORING', 'POSTPONED'].includes(status)) {
-      queryBuilder.orderBy('performer.name', 'ASC');
-    } else if (['CLOSED', 'CANCELLED'].includes(status)) {
-      queryBuilder.orderBy('request.updated_at', 'DESC');
-    }
-
-    const totalRequests = await queryBuilder.getCount();
-    const requests = await queryBuilder
-      .skip((page - 1) * limit)
-      .take(limit)
-      .getMany();
-
-    // Формирование ответа с ограниченной информацией о сотрудниках
-    const formattedRequests = requests.map((requestData) => {
+  private formatRequests(requests) {
+    return requests.map((requestData) => {
       return {
         id: requestData.id,
         request: {
@@ -258,7 +322,9 @@ export class RequestDataService {
           : null,
       };
     });
+  }
 
+  private buildResponse(formattedRequests, totalRequests, page, limit) {
     return {
       totalPages: Math.ceil(totalRequests / limit),
       currentPage: page,
@@ -586,7 +652,11 @@ export class RequestDataService {
         throw new UnauthorizedException('Request not found');
       }
 
-      const allowedRoles = [EmployeeRole.Dispatcher, EmployeeRole.Performer, EmployeeRole.Storekeeper];
+      const allowedRoles = [
+        EmployeeRole.Dispatcher,
+        EmployeeRole.Performer,
+        EmployeeRole.Storekeeper,
+      ];
       await this.validateAccess(request, userId, allowedRoles);
 
       const employee = await this.employeeRepository.findOne({
@@ -783,6 +853,7 @@ export class RequestDataService {
     }
   }
 
+  // 
   async getAssignmentByRequestIdAndPerformerId(
     requestId: number,
     performerId: number,

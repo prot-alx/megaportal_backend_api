@@ -315,14 +315,14 @@ export class FilterOptionsDto {
   pageSize?: number = 10;
 }
 
-export class  RequestFilterDto {
+export class RequestFilterDto {
   @IsOptional()
   @IsEnum(RequestType, { each: true })
   type?: RequestType[];
 
   @IsOptional()
-  @IsEnum(RequestStatus)
-  status?: RequestStatus;
+  @IsEnum(RequestStatus, { each: true })
+  status?: RequestStatus[];
 
   @IsOptional()
   @Type(() => Number)
