@@ -23,7 +23,7 @@ export class WarehouseFillingService {
     @InjectRepository(WarehouseFilling)
     private readonly warehouseFillingRepository: Repository<WarehouseFilling>,
     @InjectRepository(Employee)
-    private employeeRepository: Repository<Employee>,
+    private readonly employeeRepository: Repository<Employee>,
     @InjectRepository(Material)
     private readonly materialRepository: Repository<Material>,
     private readonly auditLogService: AuditLogService,

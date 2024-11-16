@@ -37,12 +37,12 @@ interface FilterOptions {
 export class RequestDataService {
   constructor(
     @InjectRepository(RequestData)
-    private requestDataRepository: Repository<RequestData>,
+    private readonly requestDataRepository: Repository<RequestData>,
     @InjectRepository(Employee)
-    private employeeRepository: Repository<Employee>,
+    private readonly employeeRepository: Repository<Employee>,
     @InjectRepository(Requests)
-    private requestsRepository: Repository<Requests>,
-    private jwtService: JwtService,
+    private readonly requestsRepository: Repository<Requests>,
+    private readonly jwtService: JwtService,
   ) {}
 
   // Проверка доступа к заявке

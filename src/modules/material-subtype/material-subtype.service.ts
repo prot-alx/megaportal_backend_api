@@ -12,7 +12,7 @@ import { DetailedInternalServerErrorException } from 'src/error/all-exceptions.f
 export class MaterialSubtypeService {
   constructor(
     @InjectRepository(MaterialSubtype)
-    private materialSubtypeRepository: Repository<MaterialSubtype>,
+    private readonly materialSubtypeRepository: Repository<MaterialSubtype>,
   ) {}
 
   async create(

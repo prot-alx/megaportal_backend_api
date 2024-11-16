@@ -16,7 +16,7 @@ import { MaterialType } from '../material-type/material-type.entity';
 export class MaterialService {
   constructor(
     @InjectRepository(Material)
-    private materialRepository: Repository<Material>,
+    private readonly materialRepository: Repository<Material>,
   ) {}
 
   private async isMaterialUnique(

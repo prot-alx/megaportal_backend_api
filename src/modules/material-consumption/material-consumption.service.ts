@@ -27,7 +27,7 @@ export class MaterialConsumptionService {
     @InjectRepository(RequestData)
     private readonly requestDataRepository: Repository<RequestData>,
     @InjectRepository(Employee)
-    private employeeRepository: Repository<Employee>,
+    private readonly employeeRepository: Repository<Employee>,
     @InjectRepository(WarehouseFilling)
     private readonly warehouseFillingRepository: Repository<WarehouseFilling>,
     private readonly jwtService: JwtService,
