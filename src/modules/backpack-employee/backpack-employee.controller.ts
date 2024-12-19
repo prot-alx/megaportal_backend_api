@@ -5,13 +5,14 @@ import {
   Headers,
   UseGuards,
   Get,
+  Req,
 } from '@nestjs/common';
 import { BackpackEmployeeService } from './backpack-employee.service';
 import {
   CreateBackpackEmployeeDto,
   MyBackpackDto,
 } from './backpack-employee.dto';
-
+import { Request } from 'express';
 import { AuthGuard } from '@nestjs/passport';
 import {
   ApiBearerAuth,
@@ -85,12 +86,12 @@ export class BackpackEmployeeController {
   async returnMaterial(
     @Body() returnMaterialDto: { backpack_employee_id: number; count: number },
     @Headers('authorization') authHeader: string,
+    @Req() req: Request,
   ) {
-    const token = authHeader.replace('Bearer ', '');
     return this.backpackEmployeeService.returnMaterial(
       returnMaterialDto.backpack_employee_id,
       returnMaterialDto.count,
-      token,
+      req.cookies.access_token,
     );
   }
 
@@ -123,8 +124,8 @@ export class BackpackEmployeeController {
   })
   async getEmployeeMaterials(
     @Headers('authorization') authHeader: string,
+    @Req() req: Request,
   ): Promise<MyBackpackDto[]> {
-    const token = authHeader.replace('Bearer ', '');
-    return this.backpackEmployeeService.getEmployeeMaterials(token);
+    return this.backpackEmployeeService.getEmployeeMaterials(req.cookies.access_token);
   }
 }

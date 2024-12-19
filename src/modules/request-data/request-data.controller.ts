@@ -55,14 +55,7 @@ export class RequestDataController {
     @Body() createRequestDto: CreateRequestDto,
     @Req() req: Request,
   ): Promise<{ message: string }> {
-    // Извлекаем токен из заголовков
-    const token = req.headers['authorization']?.split(' ')[1];
-
-    if (!token) {
-      throw new UnauthorizedException('Токен отсутствует');
-    }
-
-    return await this.requestDataService.create(createRequestDto, token);
+    return await this.requestDataService.create(createRequestDto, req.cookies.access_token);
   }
 
   // Назначаем заявку
@@ -77,14 +70,10 @@ export class RequestDataController {
     @Req() req: Request,
   ) {
     try {
-      const token = req.headers['authorization']?.split(' ')[1];
-      if (!token) {
-        throw new UnauthorizedException('Token is missing');
-      }
       return await this.requestDataService.assignRequest(
         assignRequestDto.request_id,
         assignRequestDto.performer_id,
-        token,
+        req.cookies.access_token,
       );
     } catch (error) {
       throw new DetailedInternalServerErrorException(
@@ -102,12 +91,8 @@ export class RequestDataController {
   async getAssignedRequests(
     @Req() req: Request,
   ): Promise<RequestDataResponseDto[]> {
-    try {
-      const token = req.headers.authorization?.split(' ')[1];
-      if (!token) {
-        throw new UnauthorizedException('Token is missing');
-      }
-      return await this.requestDataService.getAssignedRequests(token);
+    try {     
+      return await this.requestDataService.getAssignedRequests(req.cookies.access_token);
     } catch (error) {
       throw new DetailedInternalServerErrorException(
         'Error retrieving assigned requests',
@@ -128,12 +113,6 @@ export class RequestDataController {
     @Req() req: Request, // Добавляем запрос, чтобы можно было проверить токен
   ) {
     try {
-      // Извлечение токена из заголовка Authorization
-      const token = req.headers['authorization']?.split(' ')[1];
-      if (!token) {
-        throw new UnauthorizedException('Token is missing');
-      }
-
       await this.requestDataService.removePerformer(requestId, performerId);
       return { message: 'Performer removed successfully' };
     } catch (error) {
@@ -156,14 +135,10 @@ export class RequestDataController {
     @Req() req: Request,
   ) {
     try {
-      const token = req.headers['authorization']?.split(' ')[1];
-      if (!token) {
-        throw new UnauthorizedException('Token is missing');
-      }
       return await this.requestDataService.changeRequestStatus(
         requestId,
         changeRequestStatusDto.status,
-        token,
+        req.cookies.access_token,
       );
     } catch (error) {
       throw new DetailedInternalServerErrorException(
@@ -184,14 +159,10 @@ export class RequestDataController {
     @Body() addCommentDto: AddCommentDto,
     @Req() req: Request,
   ) {
-    const token = req.headers['authorization']?.split(' ')[1];
-    if (!token) {
-      throw new UnauthorizedException('Token is missing');
-    }
     return this.requestDataService.addComment(
       requestId,
       addCommentDto.comment,
-      token,
+      req.cookies.access_token,
     );
   }
 
@@ -202,11 +173,7 @@ export class RequestDataController {
       'Closing request // Закрываем заявку. Проверяем, чтобы поле комментария не было пустым',
   })
   async closeRequest(@Param('id') requestId: number, @Req() req: Request) {
-    const token = req.headers['authorization']?.split(' ')[1];
-    if (!token) {
-      throw new UnauthorizedException('Token is missing');
-    }
-    return this.requestDataService.closeRequest(requestId, token);
+    return this.requestDataService.closeRequest(requestId, req.cookies.access_token);
   }
 
   // Отмена заявки
@@ -216,11 +183,7 @@ export class RequestDataController {
       'Cancel request // Отменяем заявку. Добавляется автоматический комментарий "Заявка отменена сотрудником {Имя сотрудника}".',
   })
   async cancelRequest(@Param('id') requestId: number, @Req() req: Request) {
-    const token = req.headers['authorization']?.split(' ')[1];
-    if (!token) {
-      throw new UnauthorizedException('Token is missing');
-    }
-    return this.requestDataService.cancelRequest(requestId, token);
+    return this.requestDataService.cancelRequest(requestId, req.cookies.access_token);
   }
 
   // Все назначенные заявки (без фильтрации)
@@ -252,10 +215,6 @@ export class RequestDataController {
   })
   async getAllEmployees(@Req() req: Request): Promise<EmployeeDto[]> {
     try {
-      const token = req.headers['authorization']?.split(' ')[1];
-      if (!token) {
-        throw new UnauthorizedException('Token is missing');
-      }
       return await this.requestDataService.getAllEmployees();
     } catch (error) {
       throw new DetailedInternalServerErrorException(
@@ -276,10 +235,6 @@ export class RequestDataController {
     @Req() req: Request,
   ): Promise<EmployeeDto[]> {
     try {
-      const token = req.headers['authorization']?.split(' ')[1];
-      if (!token) {
-        throw new UnauthorizedException('Token is missing');
-      }
       return await this.requestDataService.getPerformersForRequest(requestId);
     } catch (error) {
       throw new DetailedInternalServerErrorException(
@@ -299,10 +254,6 @@ export class RequestDataController {
     @Req() req: Request,
   ): Promise<RequestDataResponseDto[]> {
     try {
-      const token = req.headers['authorization']?.split(' ')[1];
-      if (!token) {
-        throw new UnauthorizedException('Token is missing');
-      }
       return await this.requestDataService.getRequestsAndPerformers();
     } catch (error) {
       throw new DetailedInternalServerErrorException(
@@ -322,11 +273,6 @@ export class RequestDataController {
     @Req() req: Request,
   ) {
     try {
-      // Извлечение токена из заголовка Authorization
-      const token = req.headers['authorization']?.split(' ')[1];
-      if (!token) {
-        throw new UnauthorizedException('Token is missing');
-      }
 
       const { newPerformerId, currentPerformerId } = body;
 
@@ -335,13 +281,13 @@ export class RequestDataController {
           requestId,
           currentPerformerId,
           newPerformerId,
-          token,
+          req.cookies.access_token,
         );
       } else {
         await this.requestDataService.assignRequest(
           requestId,
           newPerformerId,
-          token,
+          req.cookies.access_token,
         );
       }
 
@@ -373,10 +319,6 @@ export class RequestDataController {
     @Req() req: Request,
   ): Promise<any> {
     try {
-      const token = req.headers['authorization']?.split(' ')[1];
-      if (!token) {
-        throw new UnauthorizedException('Token is missing');
-      }
       return await this.requestDataService.getRequestsWithFilters(filterDto);
     } catch (error) {
       throw new DetailedInternalServerErrorException(

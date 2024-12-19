@@ -6,13 +6,15 @@ import {
   ConflictException,
   Get,
   Req,
+  Res,
 } from '@nestjs/common';
+
 import { AuthService } from './auth.service';
 import { CreateEmployeeDto } from 'src/modules/employee/employee.dto';
 import { EmployeeService } from 'src/modules/employee/employee.service';
 import { LoginDto } from './dto/login.dto';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
-import { Request } from 'express';
+import { Request, Response } from 'express';
 import { JwtPayload } from 'src/interfaces/jwt-payload.interface';
 import { JwtService } from '@nestjs/jwt';
 import { DetailedInternalServerErrorException } from 'src/error/all-exceptions.filter';
@@ -30,10 +32,10 @@ export class AuthController {
 
   // Эндпоинт для логина пользователя
   @Post('login')
-  @ApiOperation({
-    summary: 'Login // Логинизация. Вводим логин пароль, всё.',
-  })
-  async login(@Body() loginDto: LoginDto) {
+  async login(
+    @Body() loginDto: LoginDto,
+    @Res({ passthrough: true }) response: Response,
+  ) {
     try {
       const employee = await this.authService.validateEmployee(
         loginDto.login,
@@ -42,7 +44,24 @@ export class AuthController {
       if (!employee) {
         throw new UnauthorizedException('Неверный логин или пароль.');
       }
-      return this.authService.login(employee);
+      const tokens = await this.authService.login(employee);
+
+      // Устанавливаем cookies
+      response.cookie('access_token', tokens.access_token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        maxAge: 15 * 60 * 1000, // 15 минут
+      });
+
+      response.cookie('refresh_token', tokens.refresh_token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 дней
+      });
+
+      return employee;
     } catch (error) {
       throw new DetailedInternalServerErrorException(
         'Ошибка данных.',
@@ -75,33 +94,46 @@ export class AuthController {
     summary:
       'Check Token // Проверка валидности токена. Если токен валидный, возвращает информацию о пользователе.',
   })
-  async checkToken(@Req() req: Request) {
-    const user = await this.authService.checkAuth(req);
-    return { message: 'Token is valid', user };
+  async checkToken(
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const user = await this.authService.checkAuth(req, res);
+    return { user };
   }
 
   // Эндпоинт для обновления токена
   @Post('refresh')
-  @ApiOperation({
-    summary: 'Refresh Token // Обновление токенов по refresh token.',
-  })
-  async refreshToken(@Body() refreshTokenDto: { refresh_token: string }) {
-    const { refresh_token } = refreshTokenDto;
+  async refreshToken(
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ) {
     try {
-      const payload = this.jwtService.verify<JwtPayload>(refresh_token, {
-        secret: this.configService.REFRESH_JWT,
-      });
-      console.log('Payload from refresh token:', payload);
-
-      const employee = await this.employeeService.findOne(payload.id);
-      if (!employee?.is_active) {
-        throw new UnauthorizedException('Invalid or inactive user');
-      }
-
-      return this.authService.login(employee);
+      await this.authService.refreshToken(req, res);
+      return { message: 'Tokens refreshed successfully' };
     } catch (error) {
-      console.error('Error verifying refresh token:', error);
       throw new UnauthorizedException('Invalid refresh token');
     }
+  }
+
+  @Post('logout')
+  @ApiOperation({ summary: 'Logout user' })
+  async logout(@Res({ passthrough: true }) response: Response) {
+    // Очищаем cookies
+    response.clearCookie('access_token', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      path: '/',
+    });
+
+    response.clearCookie('refresh_token', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      path: '/',
+    });
+
+    return { message: 'Logged out successfully' };
   }
 }
