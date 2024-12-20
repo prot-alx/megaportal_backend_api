@@ -3,14 +3,15 @@ import {
   Post,
   Body,
   Get,
-  UseGuards,
   Req,
+  UseGuards,
   UnauthorizedException,
   HttpCode,
   Query,
   Patch,
   Param,
 } from '@nestjs/common';
+import { Request } from 'express';
 import { FindFilteredParams, RequestsService } from './requests.service';
 import {
   CreateRequestDto,
@@ -236,11 +237,10 @@ export class RequestsController {
   })
   async cancelRequest(@Param('id') requestId: number, @Req() req: Request) {
     try {
-      const token = req.headers['authorization']?.split(' ')[1];
-      if (!token) {
-        throw new UnauthorizedException('Token is missing');
-      }
-      await this.requestsService.cancelRequest(requestId, token);
+      await this.requestsService.cancelRequest(
+        requestId,
+        req.cookies.access_token,
+      );
       return { message: 'Request has been cancelled successfully' };
     } catch (error) {
       throw new DetailedInternalServerErrorException(
@@ -265,14 +265,10 @@ export class RequestsController {
     @Req() req: Request,
   ): Promise<RequestResponseDto> {
     try {
-      const token = req.headers['authorization']?.split(' ')[1];
-      if (!token) {
-        throw new UnauthorizedException('Token is missing');
-      }
       const updatedRequest = await this.requestsService.updateRequest(
         id,
         updateRequestDto,
-        token,
+        req.cookies.access_token,
       );
       return new RequestResponseDto(updatedRequest);
     } catch (error) {

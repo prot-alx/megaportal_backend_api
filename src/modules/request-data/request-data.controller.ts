@@ -55,7 +55,10 @@ export class RequestDataController {
     @Body() createRequestDto: CreateRequestDto,
     @Req() req: Request,
   ): Promise<{ message: string }> {
-    return await this.requestDataService.create(createRequestDto, req.cookies.access_token);
+    return await this.requestDataService.create(
+      createRequestDto,
+      req.cookies.access_token,
+    );
   }
 
   // Назначаем заявку
@@ -91,8 +94,10 @@ export class RequestDataController {
   async getAssignedRequests(
     @Req() req: Request,
   ): Promise<RequestDataResponseDto[]> {
-    try {     
-      return await this.requestDataService.getAssignedRequests(req.cookies.access_token);
+    try {
+      return await this.requestDataService.getAssignedRequests(
+        req.cookies.access_token,
+      );
     } catch (error) {
       throw new DetailedInternalServerErrorException(
         'Error retrieving assigned requests',
@@ -173,7 +178,10 @@ export class RequestDataController {
       'Closing request // Закрываем заявку. Проверяем, чтобы поле комментария не было пустым',
   })
   async closeRequest(@Param('id') requestId: number, @Req() req: Request) {
-    return this.requestDataService.closeRequest(requestId, req.cookies.access_token);
+    return this.requestDataService.closeRequest(
+      requestId,
+      req.cookies.access_token,
+    );
   }
 
   // Отмена заявки
@@ -183,7 +191,10 @@ export class RequestDataController {
       'Cancel request // Отменяем заявку. Добавляется автоматический комментарий "Заявка отменена сотрудником {Имя сотрудника}".',
   })
   async cancelRequest(@Param('id') requestId: number, @Req() req: Request) {
-    return this.requestDataService.cancelRequest(requestId, req.cookies.access_token);
+    return this.requestDataService.cancelRequest(
+      requestId,
+      req.cookies.access_token,
+    );
   }
 
   // Все назначенные заявки (без фильтрации)
@@ -273,7 +284,6 @@ export class RequestDataController {
     @Req() req: Request,
   ) {
     try {
-
       const { newPerformerId, currentPerformerId } = body;
 
       if (currentPerformerId !== undefined) {
