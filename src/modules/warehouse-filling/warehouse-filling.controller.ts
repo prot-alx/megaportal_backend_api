@@ -95,17 +95,17 @@ export class WarehouseFillingController {
   })
   async addQuantity(
     @Param('id') id: number,
-    @Body() addOrRemoveQuantityDto: AddOrRemoveQuantityDto, // Используйте DTO
+    @Body() addOrRemoveQuantityDto: AddOrRemoveQuantityDto,
     @Headers('authorization') authHeader: string,
   ): Promise<WarehouseFilling> {
     try {
-      const { count } = addOrRemoveQuantityDto; // Извлеките значение из DTO
+      const { count } = addOrRemoveQuantityDto;
 
       if (isNaN(count) || count < 0) {
         throw new BadRequestException('Count must be a non-negative number');
       }
 
-      const token = authHeader?.split(' ')[1]; // Extract token from Bearer
+      const token = authHeader?.split(' ')[1];
       if (!token) {
         throw new UnauthorizedException('Token is missing');
       }
