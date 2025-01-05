@@ -1,0 +1,126 @@
+# ------------------------------------------------------
+# THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
+# ------------------------------------------------------
+
+type Employee {
+  id: ID!
+  external_id: String
+  name: String
+  login: String!
+  address: String
+  phone: String
+  role: EmployeeRole!
+  is_active: Boolean!
+  created_at: DateTime!
+  updated_at: DateTime!
+}
+
+enum EmployeeRole {
+  Admin
+  Storekeeper
+  Dispatcher
+  Performer
+}
+
+"""
+A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
+"""
+scalar DateTime
+
+type MaterialCategory {
+  id: ID!
+  name: String!
+  created_at: DateTime!
+  updated_at: DateTime!
+}
+
+type MaterialType {
+  id: ID!
+  name: String!
+  created_at: DateTime!
+  updated_at: DateTime!
+}
+
+type MaterialSubtype {
+  id: ID!
+  name: String!
+  created_at: DateTime!
+  updated_at: DateTime!
+}
+
+type Material {
+  id: ID!
+  sap_number: String
+  serial: String
+  inventory_number: String
+  is_active: Boolean!
+  category_id: MaterialCategory!
+  type_id: MaterialType!
+  subtype_id: MaterialSubtype!
+  created_at: DateTime!
+  updated_at: DateTime!
+}
+
+type WarehouseFilling {
+  id: ID!
+  material: Material!
+  count: Float!
+  created_at: DateTime!
+  updated_at: DateTime!
+}
+
+type BackpackEmployee {
+  id: ID!
+  employee_id: Employee!
+  warehouse_filling_id: WarehouseFilling!
+  count: Float!
+  created_at: DateTime!
+  updated_at: DateTime!
+}
+
+type Requests {
+  id: ID!
+  hr_id: Employee!
+  ep_id: String
+  client_id: String!
+  description: String!
+  client_contacts: String
+  address: String!
+  request_date: DateTime!
+  type: RequestType!
+  comment: String
+  status: RequestStatus!
+  created_at: DateTime!
+  updated_at: DateTime!
+}
+
+enum RequestType {
+  Default
+  VIP
+  Video
+  Optical
+  Other
+}
+
+enum RequestStatus {
+  NEW
+  IN_PROGRESS
+  SUCCESS
+  CLOSED
+  CANCELLED
+  MONITORING
+  POSTPONED
+}
+
+type RequestData {
+  id: ID!
+  request: Requests!
+  executor_id: Employee!
+  performer_id: Employee!
+  created_at: DateTime!
+  updated_at: DateTime!
+}
+
+type Query {
+  hello: String!
+}

@@ -11,10 +11,18 @@ import { APP_FILTER, APP_GUARD } from '@nestjs/core';
 import { AllExceptionsFilter } from './error/all-exceptions.filter';
 import { RolesGuard } from './common/guards/roles.guard';
 import { AppConfigService } from './config/config.service';
+import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
+import { GraphQLModule } from '@nestjs/graphql';
+import { join } from 'path';
+import { TestResolver } from './test.resolver';
 
 @Module({
   imports: [
     ConfigModule,
+    GraphQLModule.forRoot<ApolloDriverConfig>({
+      driver: ApolloDriver,
+      autoSchemaFile: join(process.cwd(), 'src/schema.gql'),
+    }),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: async (configService: AppConfigService) => ({
@@ -56,6 +64,7 @@ import { AppConfigService } from './config/config.service';
     AuthService,
     JwtStrategy,
     RolesGuard,
+    TestResolver, // Чтобы graphql запустился, потом убрать
   ],
   exports: [AppConfigService],
 })
