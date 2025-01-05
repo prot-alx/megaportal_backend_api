@@ -502,7 +502,7 @@
     jest-util "^29.7.0"
     jest-validate "^29.7.0"
     jest-watcher "^29.7.0"
-    micromatch "^4.0.4"
+    micromatch "^4.0.8"
     pretty-format "^29.7.0"
     slash "^3.0.0"
     strip-ansi "^6.0.0"
@@ -636,7 +636,7 @@
     jest-haste-map "^29.7.0"
     jest-regex-util "^29.6.3"
     jest-util "^29.7.0"
-    micromatch "^4.0.4"
+    micromatch "^4.0.8"
     pirates "^4.0.4"
     slash "^3.0.0"
     write-file-atomic "^4.0.2"
@@ -3437,7 +3437,7 @@ jest-config@^29.7.0:
     jest-runner "^29.7.0"
     jest-util "^29.7.0"
     jest-validate "^29.7.0"
-    micromatch "^4.0.4"
+    micromatch "^4.0.8"
     parse-json "^5.2.0"
     pretty-format "^29.7.0"
     slash "^3.0.0"
@@ -3502,7 +3502,7 @@ jest-haste-map@^29.7.0:
     jest-regex-util "^29.6.3"
     jest-util "^29.7.0"
     jest-worker "^29.7.0"
-    micromatch "^4.0.4"
+    micromatch "^4.0.8"
     walker "^1.0.8"
   optionalDependencies:
     fsevents "^2.3.2"
@@ -3535,7 +3535,7 @@ jest-message-util@^29.7.0:
     "@types/stack-utils" "^2.0.0"
     chalk "^4.0.0"
     graceful-fs "^4.2.9"
-    micromatch "^4.0.4"
+    micromatch "^4.0.8"
     pretty-format "^29.7.0"
     slash "^3.0.0"
     stack-utils "^2.0.3"
@@ -4030,14 +4030,6 @@ methods@^1.1.2, methods@~1.1.2:
   version "1.1.2"
   resolved "https://registry.yarnpkg.com/methods/-/methods-1.1.2.tgz#5529a4d67654134edcc5266656835b0f851afcee"
   integrity sha512-iclAHeNqNm68zFtnZ0e+1L2yUIdvzNoauKU4WBA3VvH/vPFieF7qfRlwUZU+DA9P9bPXIS90ulxoUoCH23sV2w==
-
-micromatch@^4.0.0, micromatch@^4.0.4:
-  version "4.0.7"
-  resolved "https://registry.npmjs.org/micromatch/-/micromatch-4.0.7.tgz"
-  integrity sha512-LPP/3KorzCwBxfeUuZmaR6bG2kdeHSbe0P2tY3FLRU4vYrjYz5hI4QZwV0njUx3jeuKe67YukQ1LSPZBKDqO/Q==
-  dependencies:
-    braces "^3.0.3"
-    picomatch "^2.3.1"
 
 micromatch@^4.0.8:
   version "4.0.8"
@@ -5367,7 +5359,7 @@ ts-loader@^9.4.3:
   dependencies:
     chalk "^4.1.0"
     enhanced-resolve "^5.0.0"
-    micromatch "^4.0.0"
+    micromatch "^4.0.8"
     semver "^7.3.4"
     source-map "^0.7.4"
 
