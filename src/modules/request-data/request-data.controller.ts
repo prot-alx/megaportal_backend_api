@@ -291,7 +291,6 @@ export class RequestDataController {
           requestId,
           currentPerformerId,
           newPerformerId,
-          req.cookies.access_token,
         );
       } else {
         await this.requestDataService.assignRequest(

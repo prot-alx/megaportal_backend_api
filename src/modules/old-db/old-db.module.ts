@@ -7,6 +7,6 @@ import { OldBaza } from './old-db.entity';
 @Module({
   imports: [TypeOrmModule.forFeature([OldBaza])],
   providers: [OldDbService],
-  controllers: [OldDbController]
+  controllers: [OldDbController],
 })
 export class OldDbModule {}

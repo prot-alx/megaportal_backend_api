@@ -14,7 +14,10 @@ export class AppConfigService {
       SECRET_JWT: process.env.SECRET_JWT || '',
       EXPIRE_JWT: parseInt(process.env.EXPIRE_JWT || '3600', 10),
       REFRESH_JWT: process.env.REFRESH_JWT || '',
-      REFRESH_EXPIRE_JWT: parseInt(process.env.REFRESH_EXPIRE_JWT || '86400', 10),
+      REFRESH_EXPIRE_JWT: parseInt(
+        process.env.REFRESH_EXPIRE_JWT || '86400',
+        10,
+      ),
       API_PORT: parseInt(process.env.API_PORT, 10),
     };
   }
@@ -58,5 +61,4 @@ export class AppConfigService {
   get REFRESH_EXPIRE_JWT(): number {
     return this.config.REFRESH_EXPIRE_JWT as number;
   }
-  
 }

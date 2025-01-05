@@ -1,4 +1,4 @@
-import {  
+import {
   IsDate,
   IsDateString,
   IsEnum,
@@ -276,7 +276,8 @@ export class RequestDataResponseDto {
 export class FilterOptionsDto {
   @IsOptional()
   @IsEnum(RequestStatus, {
-    message: 'Invalid status. Must be one of: NEW, IN_PROGRESS, SUCCESS, CLOSED, CANCELLED, MONITORING, POSTPONED.',
+    message:
+      'Invalid status. Must be one of: NEW, IN_PROGRESS, SUCCESS, CLOSED, CANCELLED, MONITORING, POSTPONED.',
   })
   status?: RequestStatus;
 

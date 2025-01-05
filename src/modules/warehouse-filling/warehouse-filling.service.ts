@@ -80,7 +80,7 @@ export class WarehouseFillingService {
     const userId = this.extractUserIdFromToken(token);
     const storekeeper = await this.getEmployeeName(userId);
 
-    let details: any = {
+    const details: any = {
       count,
       storekeeper,
       material: material.subtype_id?.name || '',
@@ -165,7 +165,7 @@ export class WarehouseFillingService {
       }
     } else {
       // For materials without serial or inventory number, handle them normally
-      let existingWarehouseFilling =
+      const existingWarehouseFilling =
         await this.warehouseFillingRepository.findOne({
           where: { material: { id: material_id } },
           relations: [

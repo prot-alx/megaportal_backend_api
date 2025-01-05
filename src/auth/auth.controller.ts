@@ -15,7 +15,6 @@ import { EmployeeService } from 'src/modules/employee/employee.service';
 import { LoginDto } from './dto/login.dto';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Request, Response } from 'express';
-import { JwtPayload } from 'src/interfaces/jwt-payload.interface';
 import { JwtService } from '@nestjs/jwt';
 import { DetailedInternalServerErrorException } from 'src/error/all-exceptions.filter';
 import { AppConfigService } from 'src/config/config.service';

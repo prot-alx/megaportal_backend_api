@@ -1,9 +1,4 @@
-import {
-  IsString,
-  IsOptional,
-  IsEnum,
-  IsBoolean,
-} from 'class-validator';
+import { IsString, IsOptional, IsEnum, IsBoolean } from 'class-validator';
 import { EmployeeRole } from './employee.entity';
 import { ApiProperty } from '@nestjs/swagger';
 
@@ -103,4 +98,3 @@ export class EmployeeDto {
     Object.assign(this, partial);
   }
 }
-

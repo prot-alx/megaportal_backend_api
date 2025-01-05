@@ -126,6 +126,8 @@ export class BackpackEmployeeController {
     @Headers('authorization') authHeader: string,
     @Req() req: Request,
   ): Promise<MyBackpackDto[]> {
-    return this.backpackEmployeeService.getEmployeeMaterials(req.cookies.access_token);
+    return this.backpackEmployeeService.getEmployeeMaterials(
+      req.cookies.access_token,
+    );
   }
 }

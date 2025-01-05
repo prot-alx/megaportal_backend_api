@@ -146,7 +146,7 @@ export class EmployeeService {
     }
   }
 
-  // 
+  //
   async remove(id: number): Promise<void> {
     try {
       const result = await this.employeeRepository.delete(id);

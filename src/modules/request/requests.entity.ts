@@ -54,13 +54,23 @@ export class Requests {
   @Column({ type: 'date', nullable: false })
   request_date: Date;
 
-  @Column({ type: 'enum', enum: RequestType, nullable: false, default: RequestType.Default })
+  @Column({
+    type: 'enum',
+    enum: RequestType,
+    nullable: false,
+    default: RequestType.Default,
+  })
   type: RequestType;
 
   @Column({ nullable: true })
   comment: string;
 
-  @Column({ type: 'enum', enum: RequestStatus, nullable: false, default: RequestStatus.NEW })
+  @Column({
+    type: 'enum',
+    enum: RequestStatus,
+    nullable: false,
+    default: RequestStatus.NEW,
+  })
   status: RequestStatus;
 
   @CreateDateColumn()

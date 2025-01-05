@@ -232,7 +232,7 @@ export class RequestsService {
         });
       }
 
-          // Добавляем сортировку по created_at
+      // Добавляем сортировку по created_at
       queryBuilder.orderBy('request.created_at', 'DESC');
       queryBuilder.skip((page - 1) * limit).take(limit);
 

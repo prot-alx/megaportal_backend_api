@@ -782,7 +782,6 @@ export class RequestDataService {
     requestId: number,
     currentPerformerId: number,
     newPerformerId: number,
-    token: string,
   ): Promise<void> {
     try {
       // Находим заявку
@@ -853,7 +852,7 @@ export class RequestDataService {
     }
   }
 
-  // 
+  //
   async getAssignmentByRequestIdAndPerformerId(
     requestId: number,
     performerId: number,
