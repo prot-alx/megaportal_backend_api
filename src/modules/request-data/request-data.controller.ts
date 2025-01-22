@@ -32,6 +32,7 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { EmployeeDto } from '../employee/employee.dto';
+import { RequestUpdatesGateway } from './request-updates.gateway';
 
 @ApiTags('Request-Data')
 @ApiBearerAuth()
@@ -41,6 +42,7 @@ export class RequestDataController {
   constructor(
     private readonly requestDataService: RequestDataService,
     private readonly jwtService: JwtService,
+    private readonly requestUpdatesGateway: RequestUpdatesGateway,
   ) {}
 
   @Post()
@@ -55,10 +57,15 @@ export class RequestDataController {
     @Body() createRequestDto: CreateRequestDto,
     @Req() req: Request,
   ): Promise<{ message: string }> {
-    return await this.requestDataService.create(
+    const result = await this.requestDataService.create(
       createRequestDto,
       req.cookies.access_token,
     );
+    this.requestUpdatesGateway.notifyRequestCreated({
+      ...result,
+      ...createRequestDto,
+    });
+    return result;
   }
 
   // Назначаем заявку

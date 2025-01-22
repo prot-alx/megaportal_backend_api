@@ -120,7 +120,7 @@ export class EmployeeController {
     required: false,
     isArray: true,
     description: 'Роли сотрудников',
-    type: String, // Убедитесь, что тип указан как String
+    type: String,
   })
   @ApiQuery({
     name: 'is_active',
@@ -178,7 +178,7 @@ export class EmployeeController {
         isActiveBoolean,
       );
     } catch (error) {
-      console.error('Error in findByRoles:', error); // Логируем ошибку
+      console.error('Error in findByRoles:', error);
       throw new DetailedInternalServerErrorException(
         'Ошибка получения данных о сотрудниках.',
         error.message,

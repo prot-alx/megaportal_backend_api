@@ -8,10 +8,11 @@ import { Employee } from '../employee/employee.entity';
 import { EmployeeService } from '../employee/employee.service';
 import { RequestsService } from '../request/requests.service';
 import { JwtService } from '@nestjs/jwt';
+import { RequestUpdatesGateway } from './request-updates.gateway';
 
 @Module({
   imports: [TypeOrmModule.forFeature([RequestData, Requests, Employee])],
-  providers: [RequestDataService, RequestsService, EmployeeService, JwtService],
+  providers: [RequestDataService, RequestsService, EmployeeService, JwtService, RequestUpdatesGateway],
   controllers: [RequestDataController],
   exports: [RequestDataService],
 })

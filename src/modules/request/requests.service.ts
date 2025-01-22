@@ -346,7 +346,7 @@ export class RequestsService {
       const userId = this.extractUserIdFromToken(token);
       const request = await this.requestsRepository.findOne({
         where: { id: requestId },
-        relations: ['hr_id'], // Предполагаем, что нам нужно получить данные о сотруднике
+        relations: ['hr_id'],
       });
 
       if (!request) {

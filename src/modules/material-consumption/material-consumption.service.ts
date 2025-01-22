@@ -166,7 +166,7 @@ export class MaterialConsumptionService {
           new MaterialConsumptionResponseDto(materialConsumption),
       );
     } catch (error) {
-      console.error('Error retrieving material consumptions:', error); // Логирование ошибки
+      console.error('Error retrieving material consumptions:', error);
       throw new DetailedInternalServerErrorException(
         'Error retrieving material consumptions',
         error.message,
@@ -286,11 +286,9 @@ export class MaterialConsumptionService {
 
       return updatedMaterialConsumption;
     } catch (error) {
-      console.error('Error in approveMaterialConsumption:', error); // Логирование ошибки
-
-      // Передаем конкретное сообщение об ошибке, если это возможно
+      console.error('Error in approveMaterialConsumption:', error);
       if (error instanceof HttpException) {
-        throw error; // Перебрасываем HttpException без изменений
+        throw error;
       } else {
         throw new DetailedInternalServerErrorException(
           'Error approving material consumption',

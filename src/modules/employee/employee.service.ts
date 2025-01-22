@@ -191,7 +191,7 @@ export class EmployeeService {
         is_active: employee.is_active,
       }));
     } catch (error) {
-      console.error('Error in findByRoles service method:', error); // Логируем ошибку в сервисе
+      console.error('Error in findByRoles service method:', error);
       throw new DetailedInternalServerErrorException(
         'Ошибка получения данных о сотрудниках.',
         error.message,
