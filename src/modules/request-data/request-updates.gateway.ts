@@ -1,6 +1,6 @@
 import { WebSocketGateway, WebSocketServer } from '@nestjs/websockets';
 import { Server } from 'socket.io';
-import { UseGuards } from '@nestjs/common';
+// import { UseGuards } from '@nestjs/common';
 
 export enum RequestUpdateType {
   CREATED = 'created',
@@ -20,7 +20,7 @@ interface RequestUpdate<T = any> {
 
 @WebSocketGateway({
   cors: {
-    origin: 'http://localhost:5173',
+    origin: ['http://localhost:5173'],
     credentials: true,
   },
 })

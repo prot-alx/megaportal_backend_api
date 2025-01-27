@@ -8,7 +8,7 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Not, Repository } from 'typeorm';
+import { DataSource, In, Not, Repository } from 'typeorm';
 import { RequestData } from './request-data.entity';
 import { Employee, EmployeeRole } from '../employee/employee.entity';
 import {
@@ -43,6 +43,7 @@ export class RequestDataService {
     @InjectRepository(Requests)
     private readonly requestsRepository: Repository<Requests>,
     private readonly jwtService: JwtService,
+    private readonly dataSource: DataSource,
   ) {}
 
   // Проверка доступа к заявке
@@ -402,6 +403,97 @@ export class RequestDataService {
         'Error creating request',
         error.message,
       );
+    }
+  }
+
+  // Создать сразу несколько заявок (только для заполнения моковыми данными)
+  async createBulk(
+    createRequestDtos: CreateRequestDto[],
+    token: string,
+  ): Promise<{ message: string; created: number; failed: number }> {
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      const employeeId = this.extractUserIdFromToken(token);
+      const employee = await this.employeeRepository.findOne({
+        where: { id: employeeId },
+      });
+
+      if (!employee) {
+        throw new NotFoundException('Сотрудник не найден.');
+      }
+
+      const results = {
+        created: 0,
+        failed: 0,
+      };
+
+      // Проверяем существующие активные заявки
+      const activeClientIds = await this.requestsRepository.find({
+        where: {
+          client_id: In(createRequestDtos.map((dto) => dto.client_id)),
+          status: Not(RequestStatus.CLOSED),
+        },
+        select: ['client_id'],
+      });
+
+      const activeClientsSet = new Set(activeClientIds.map((r) => r.client_id));
+
+      for (const dto of createRequestDtos) {
+        try {
+          if (activeClientsSet.has(dto.client_id)) {
+            results.failed++;
+            continue;
+          }
+
+          const requestDate = new Date(dto.request_date);
+          if (isNaN(requestDate.getTime())) {
+            results.failed++;
+            continue;
+          }
+
+          const request = this.requestsRepository.create({
+            ...dto,
+            created_at: new Date(),
+            updated_at: new Date(),
+            hr_id: employee,
+            request_date: requestDate,
+            status: dto.status || RequestStatus.NEW,
+          });
+
+          const savedRequest = await queryRunner.manager.save(request);
+
+          const requestData = this.requestDataRepository.create({
+            request: savedRequest,
+            executor_id: null,
+            performer_id: null,
+            created_at: new Date(),
+            updated_at: new Date(),
+          });
+
+          await queryRunner.manager.save(requestData);
+          results.created++;
+        } catch {
+          results.failed++;
+        }
+      }
+
+      await queryRunner.commitTransaction();
+      return {
+        message: `Создано заявок: ${results.created}, не удалось создать: ${results.failed}`,
+        created: results.created,
+        failed: results.failed,
+      };
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw new DetailedInternalServerErrorException(
+        'Error creating requests',
+        error.message,
+      );
+    } finally {
+      await queryRunner.release();
     }
   }
 

@@ -68,6 +68,31 @@ export class RequestDataController {
     return result;
   }
 
+  // Для создания нескольких заявок массивом (моковые заявки)
+  @Post('bulk')
+  @ApiOperation({ summary: 'Создать несколько заявок' })
+  @ApiResponse({
+    status: 201,
+    description: 'Результат создания заявок',
+    schema: {
+      properties: {
+        message: { type: 'string' },
+        created: { type: 'number' },
+        failed: { type: 'number' },
+      },
+    },
+  })
+  @ApiResponse({ status: 400, description: 'Неверные данные' })
+  async createBulkRequests(
+    @Body() createRequestDtos: CreateRequestDto[],
+    @Req() req: Request,
+  ): Promise<{ message: string; created: number; failed: number }> {
+    return await this.requestDataService.createBulk(
+      createRequestDtos,
+      req.cookies.access_token,
+    );
+  }
+
   // Назначаем заявку
   //@Roles(EmployeeRole.Dispatcher)
   @Post('assign')
