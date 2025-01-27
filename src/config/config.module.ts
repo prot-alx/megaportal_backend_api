@@ -17,6 +17,7 @@ import { AppConfigService } from './config.service';
           REFRESH_JWT: process.env.REFRESH_JWT,
           REFRESH_EXPIRE_JWT: parseInt(process.env.REFRESH_EXPIRE_JWT, 10),
           API_PORT: parseInt(process.env.API_PORT, 10),
+          FRONTEND_API_URL: process.env.FRONTEND_API_URL,
         }),
       ],
       isGlobal: true,

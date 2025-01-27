@@ -7,7 +7,7 @@ import { AuthService } from './auth/auth.service';
 import { AuthModule } from './auth/auth.module';
 import { entities } from './modules/entities';
 import { modules } from './modules/modules';
-import { APP_FILTER, APP_GUARD } from '@nestjs/core';
+import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { AllExceptionsFilter } from './error/all-exceptions.filter';
 import { RolesGuard } from './common/guards/roles.guard';
 import { AppConfigService } from './config/config.service';
@@ -15,10 +15,13 @@ import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
 import { GraphQLModule } from '@nestjs/graphql';
 import { join } from 'path';
 import { TestResolver } from './test.resolver';
+import { ChangeNotificationInterceptor } from './modules/notifications/interceptors/change-notification.interceptor';
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
   imports: [
     ConfigModule,
+    ScheduleModule.forRoot(),
     GraphQLModule.forRoot<ApolloDriverConfig>({
       driver: ApolloDriver,
       autoSchemaFile: join(process.cwd(), 'src/schema.gql'),
@@ -60,6 +63,10 @@ import { TestResolver } from './test.resolver';
     {
       provide: APP_GUARD,
       useClass: RolesGuard,
+    },
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: ChangeNotificationInterceptor,
     },
     AuthService,
     JwtStrategy,

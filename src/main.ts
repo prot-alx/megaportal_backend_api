@@ -1,6 +1,5 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { ValidationPipe } from '@nestjs/common';
 import { AppConfigService } from './config/config.service';
@@ -27,7 +26,7 @@ async function startApp() {
 
   app.enableCors({
     origin: [
-      'http://localhost:5173',
+      configService.FRONTEND_API_URL,
     ],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],

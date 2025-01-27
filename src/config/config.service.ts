@@ -19,6 +19,7 @@ export class AppConfigService {
         10,
       ),
       API_PORT: parseInt(process.env.API_PORT, 10),
+      FRONTEND_API_URL: process.env.FRONTEND_API_URL,
     };
   }
 
@@ -60,5 +61,9 @@ export class AppConfigService {
 
   get REFRESH_EXPIRE_JWT(): number {
     return this.config.REFRESH_EXPIRE_JWT as number;
+  }
+
+  get FRONTEND_API_URL(): string {
+    return this.config.FRONTEND_API_URL as string;
   }
 }

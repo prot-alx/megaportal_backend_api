@@ -32,7 +32,6 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { EmployeeDto } from '../employee/employee.dto';
-import { RequestUpdatesGateway } from './request-updates.gateway';
 
 @ApiTags('Request-Data')
 @ApiBearerAuth()
@@ -42,7 +41,6 @@ export class RequestDataController {
   constructor(
     private readonly requestDataService: RequestDataService,
     private readonly jwtService: JwtService,
-    private readonly requestUpdatesGateway: RequestUpdatesGateway,
   ) {}
 
   @Post()
@@ -61,10 +59,6 @@ export class RequestDataController {
       createRequestDto,
       req.cookies.access_token,
     );
-    this.requestUpdatesGateway.notifyRequestCreated({
-      ...result,
-      ...createRequestDto,
-    });
     return result;
   }
 
