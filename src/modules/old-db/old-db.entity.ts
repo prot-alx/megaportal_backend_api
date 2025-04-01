@@ -29,15 +29,15 @@ export class OldBaza {
   zhaloba?: string;
 
   @Field({ nullable: true })
-  @Column({ length: 300, nullable: true })
+  @Column({ length: 500, nullable: true })
   oborud?: string;
 
   @Field({ nullable: true })
-  @Column({ length: 100, nullable: true })
+  @Column({ length: 500, nullable: true })
   adres?: string;
 
   @Field({ nullable: true, defaultValue: '---' })
-  @Column({ length: 30, nullable: true, default: '---' })
+  @Column({ length: 500, nullable: true, default: '---' })
   kt?: string;
 
   @Field({ nullable: true })
@@ -77,15 +77,15 @@ export class OldBaza {
   testmod?: number;
 
   @Field({ nullable: true })
-  @Column({ length: 100, nullable: true })
+  @Column({ length: 500, nullable: true })
   port?: string;
 
   @Field({ nullable: true })
-  @Column({ length: 25, nullable: true })
+  @Column({ length: 500, nullable: true })
   avtor?: string;
 
   @Field({ nullable: true })
-  @Column({ length: 100, nullable: true })
+  @Column({ length: 500, nullable: true })
   porturez?: string;
 
   @Field(() => Int, { nullable: true, defaultValue: 0 })
